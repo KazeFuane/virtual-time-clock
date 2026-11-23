@@ -7,6 +7,7 @@
 -- =============================================================
 
 -- Drop tables in reverse FK dependency order
+DROP TABLE IF EXISTS `time_error_reports`;
 DROP TABLE IF EXISTS `breaks`;
 DROP TABLE IF EXISTS `time_actions`;
 DROP TABLE IF EXISTS `attendance_days`;
@@ -120,4 +121,31 @@ CREATE TABLE `breaks` (
     CONSTRAINT `fk_breaks_user`
         FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
         ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================================
+-- TIME_ERROR_REPORTS
+-- Employee reports of time errors for managers/admins to fix
+-- =============================================================
+CREATE TABLE `time_error_reports` (
+    `id`              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `user_id`         INT UNSIGNED NOT NULL                 COMMENT 'Employee who reported',
+    `work_date`       DATE         NOT NULL,
+    `error_code`      VARCHAR(40)  NULL                     COMMENT 'TimeErrorService code, NULL = other problem',
+    `message`         TEXT         NOT NULL                 COMMENT 'What the employee says happened',
+    `status`          ENUM('OPEN','RESOLVED') NOT NULL DEFAULT 'OPEN',
+    `resolved_by`     INT UNSIGNED NULL,
+    `resolution_note` TEXT         NULL,
+    `resolved_at`     TIMESTAMP    NULL,
+    `created_at`      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    INDEX `idx_reports_user`   (`user_id`),
+    INDEX `idx_reports_status` (`status`),
+
+    CONSTRAINT `fk_reports_user`
+        FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_reports_resolver`
+        FOREIGN KEY (`resolved_by`) REFERENCES `users` (`id`)
+        ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

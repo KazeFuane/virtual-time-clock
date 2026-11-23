@@ -30,6 +30,9 @@ $currentUser = AuthMiddleware::getCurrentUser();
                     <a href="/virtual-time-clock/public/history.php" class="block px-3 py-1.5 rounded-md text-xs <?= str_contains($currentUri, 'history.php') ? 'bg-[#2e1c42] text-purple-300 font-semibold' : 'text-gray-400 hover:text-gray-200 hover:bg-[#1c1228]' ?> transition">
                         My History
                     </a>
+                    <a href="/virtual-time-clock/public/time-errors.php" class="block px-3 py-1.5 rounded-md text-xs <?= str_contains($currentUri, '/public/time-errors.php') ? 'bg-[#2e1c42] text-purple-300 font-semibold' : 'text-gray-400 hover:text-gray-200 hover:bg-[#1c1228]' ?> transition">
+                        Summary of time errors
+                    </a>
                     <a href="/virtual-time-clock/public/placeholder.php?module=My%20Schedule" class="block px-3 py-1.5 rounded-md text-xs text-gray-400 hover:text-gray-200 hover:bg-[#1c1228] transition">
                         My Schedule
                     </a>
@@ -69,6 +72,9 @@ $currentUser = AuthMiddleware::getCurrentUser();
                     <a href="/virtual-time-clock/public/admin/index.php" class="flex items-center justify-between px-3 py-2 rounded-lg text-gray-300 hover:bg-[#221530] hover:text-white transition mt-1">
                         <span>Admin Console</span>
                         <span class="text-[10px] bg-purple-900 text-purple-300 font-semibold px-1.5 py-0.5 rounded">Admin</span>
+                    </a>
+                    <a href="/virtual-time-clock/public/admin/time-errors.php" class="flex items-center justify-between px-3 py-2 rounded-lg text-gray-300 hover:bg-[#221530] hover:text-white transition mt-1">
+                        <span>Time Errors</span>
                     </a>
                 </div>
             <?php endif; ?>

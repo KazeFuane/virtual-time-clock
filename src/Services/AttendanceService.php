@@ -78,7 +78,7 @@ class AttendanceService
 
         if ($attendance['status'] === 'WORKING') {
             // Add elapsed time since last work-resume point
-            $totalWorkSeconds = $this->calculateLiveWorkSeconds($attendance, $now);
+            $totalWorkSeconds = $this->calculateLiveWorkSeconds((int) $attendance['id'], $now);
         } elseif ($attendance['status'] === 'ON_BREAK') {
             // Add elapsed break time
             if ($currentBreak) {
@@ -106,13 +106,45 @@ class AttendanceService
     }
 
     /**
-     * Calculate live work seconds (accounts for break time already taken).
+     * Calculate work seconds by replaying the day's action log.
+     *
+     * Only time between a clock-in (or break end) and the next break start
+     * (or clock-out) counts. Time spent logged out between END_WORKDAY and a
+     * later START_WORKDAY, and the full real length of every break, are not
+     * counted. If the agent is working at the end of the log, time up to
+     * $currentTime is added.
      */
-    private function calculateLiveWorkSeconds(array $attendance, string $currentTime): int
+    private function calculateLiveWorkSeconds(int $attendanceDayId, string $currentTime): int
     {
-        $totalElapsed = TimeHelper::secondsBetweenTimes($attendance['start_time'], $currentTime);
-        $breakSeconds = (int) $attendance['total_break_seconds'];
-        return max(0, $totalElapsed - $breakSeconds);
+        $stmt = $this->db->prepare("
+            SELECT action_type, action_time
+            FROM time_actions
+            WHERE attendance_day_id = ?
+            ORDER BY id ASC
+        ");
+        $stmt->execute([$attendanceDayId]);
+
+        $work = 0;
+        $segmentStart = null;
+        foreach ($stmt->fetchAll() as $a) {
+            switch ($a['action_type']) {
+                case 'START_WORKDAY':
+                case 'END_BREAK':
+                    $segmentStart = $a['action_time'];
+                    break;
+                case 'START_BREAK':
+                case 'END_WORKDAY':
+                    if ($segmentStart !== null) {
+                        $work += TimeHelper::secondsBetweenTimes($segmentStart, $a['action_time']);
+                    }
+                    $segmentStart = null;
+                    break;
+            }
+        }
+        if ($segmentStart !== null) {
+            $work += TimeHelper::secondsBetweenTimes($segmentStart, $currentTime);
+        }
+        return $work;
     }
 
     /**
@@ -208,7 +240,7 @@ class AttendanceService
         }
 
         // Calculate and store work seconds up to now
-        $workSecondsUntilNow = $this->calculateLiveWorkSeconds($current, $now);
+        $workSecondsUntilNow = $this->calculateLiveWorkSeconds((int) $current['id'], $now);
 
         $this->db->beginTransaction();
         try {
@@ -275,16 +307,11 @@ class AttendanceService
             throw new RuntimeException('No open break found.');
         }
 
+        // Store the real break length. Going over the allowance is not hidden
+        // (it would otherwise be counted as worked time); the time errors
+        // report flags it instead.
         $breakDuration = TimeHelper::secondsBetweenTimes($openBreak['start_time'], $now);
-        $maxBreakSeconds = BREAK_DURATION_MINUTES * 60; // 2700s
-        $prevBreakSeconds = (int) $current['total_break_seconds'];
-        $totalBreakSeconds = $prevBreakSeconds + $breakDuration;
-
-        // If break exceeds max allowance, cap duration cleanly
-        if ($totalBreakSeconds > $maxBreakSeconds) {
-            $breakDuration = max(0, $maxBreakSeconds - $prevBreakSeconds);
-            $totalBreakSeconds = $maxBreakSeconds;
-        }
+        $totalBreakSeconds = (int) $current['total_break_seconds'] + $breakDuration;
 
         $this->db->beginTransaction();
         try {
@@ -347,9 +374,9 @@ class AttendanceService
         }
 
         // Calculate final work seconds
-        $totalElapsed      = TimeHelper::secondsBetweenTimes($current['start_time'], $now);
+        // Replay the action log so time logged out between sessions is not counted
         $totalBreakSeconds = (int) $current['total_break_seconds'];
-        $totalWorkSeconds  = max(0, $totalElapsed - $totalBreakSeconds);
+        $totalWorkSeconds  = $this->calculateLiveWorkSeconds((int) $current['id'], $now);
 
         $this->db->beginTransaction();
         try {

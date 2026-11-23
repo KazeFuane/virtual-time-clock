@@ -30,7 +30,7 @@ INSERT INTO `users` (`role_id`, `username`, `email`, `password_hash`, `first_nam
 
 -- Day 1: 3 days ago - Full workday with break
 INSERT INTO `attendance_days` (`user_id`, `work_date`, `start_time`, `end_time`, `total_work_seconds`, `total_break_seconds`, `status`)
-VALUES (3, DATE_SUB(CURDATE(), INTERVAL 3 DAY), '09:00:00', '17:30:00', '28200', '2700', 'FINISHED');
+VALUES (3, DATE_SUB(CURDATE(), INTERVAL 3 DAY), '09:00:00', '17:30:00', '27900', '2700', 'FINISHED');
 
 SET @day1_id = LAST_INSERT_ID();
 
@@ -60,7 +60,7 @@ VALUES (@day2_id, 3, '12:00:00', '12:45:00', 2700);
 
 -- Day 3: Yesterday - Full workday with break
 INSERT INTO `attendance_days` (`user_id`, `work_date`, `start_time`, `end_time`, `total_work_seconds`, `total_break_seconds`, `status`)
-VALUES (3, DATE_SUB(CURDATE(), INTERVAL 1 DAY), '09:05:23', '17:02:11', '26208', '2700', 'FINISHED');
+VALUES (3, DATE_SUB(CURDATE(), INTERVAL 1 DAY), '09:05:23', '17:02:11', '25896', '2712', 'FINISHED');
 
 SET @day3_id = LAST_INSERT_ID();
 

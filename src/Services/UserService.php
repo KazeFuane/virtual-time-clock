@@ -21,7 +21,7 @@ class UserService
     {
         $stmt = $this->db->query("
             SELECT u.id, u.username, u.email, u.first_name, u.last_name,
-                   u.is_active, u.created_at, r.name AS role
+                   u.is_active, u.created_at, u.role_id, r.name AS role
             FROM users u
             JOIN roles r ON u.role_id = r.id
             ORDER BY u.last_name ASC, u.first_name ASC
@@ -75,6 +75,10 @@ class UserService
         $fields = [];
         $values = [];
 
+        if (isset($data['username'])) {
+            $fields[] = 'username = ?';
+            $values[] = $data['username'];
+        }
         if (isset($data['first_name'])) {
             $fields[] = 'first_name = ?';
             $values[] = $data['first_name'];
@@ -108,6 +112,43 @@ class UserService
         $sql = "UPDATE users SET " . implode(', ', $fields) . " WHERE id = ?";
         $stmt = $this->db->prepare($sql);
         $stmt->execute($values);
+    }
+
+    /**
+     * Set a new password for a user (stored as a bcrypt hash only).
+     */
+    public function resetPassword(int $id, string $newPassword): void
+    {
+        $stmt = $this->db->prepare("UPDATE users SET password_hash = ? WHERE id = ?");
+        $stmt->execute([password_hash($newPassword, PASSWORD_DEFAULT), $id]);
+    }
+
+    /**
+     * Generate a random, readable temporary password (no ambiguous characters).
+     */
+    public static function generatePassword(int $length = 12): string
+    {
+        $upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+        $lower = 'abcdefghijkmnpqrstuvwxyz';
+        $digits = '23456789';
+        $symbols = '!@#$%&*?';
+        $all = $upper . $lower . $digits . $symbols;
+
+        // Guarantee one of each class, fill the rest randomly, then shuffle.
+        $chars = [
+            $upper[random_int(0, strlen($upper) - 1)],
+            $lower[random_int(0, strlen($lower) - 1)],
+            $digits[random_int(0, strlen($digits) - 1)],
+            $symbols[random_int(0, strlen($symbols) - 1)],
+        ];
+        while (count($chars) < $length) {
+            $chars[] = $all[random_int(0, strlen($all) - 1)];
+        }
+        for ($i = count($chars) - 1; $i > 0; $i--) {
+            $j = random_int(0, $i);
+            [$chars[$i], $chars[$j]] = [$chars[$j], $chars[$i]];
+        }
+        return implode('', $chars);
     }
 
     /**

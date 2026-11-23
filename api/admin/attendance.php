@@ -45,6 +45,8 @@ $query .= " ORDER BY u.last_name ASC, u.first_name ASC";
 
 $stmt = $db->prepare($query);
 $stmt->execute($params);
+$records = $stmt->fetchAll();
+
 // Process records with Shift & Punctuality rules
 $processedRecords = [];
 foreach ($records as $r) {
