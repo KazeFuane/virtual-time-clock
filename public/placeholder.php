@@ -8,7 +8,7 @@ $currentUser = AuthMiddleware::requireAuth();
 
 $moduleName = htmlspecialchars($_GET['module'] ?? 'Module');
 
-$pageTitle = $moduleName . ' &mdash; Virtual Time Clock';
+$pageTitle = $moduleName . ' &mdash; ClockWise';
 $breadcrumbs = [
     ['label' => 'Time Clock', 'url' => '/virtual-time-clock/public/dashboard.php'],
     ['label' => $moduleName, 'url' => '']

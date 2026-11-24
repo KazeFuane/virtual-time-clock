@@ -6,7 +6,7 @@ require_once __DIR__ . '/../src/bootstrap.php';
 
 $currentUser = AuthMiddleware::requireAuth();
 
-$pageTitle = 'Virtual Time Clock &mdash; Dashboard';
+$pageTitle = 'Time Clock &mdash; ClockWise';
 $breadcrumbs = [
     ['label' => 'Time Clock', 'url' => '/virtual-time-clock/public/dashboard.php'],
     ['label' => 'Time Management', 'url' => '#'],

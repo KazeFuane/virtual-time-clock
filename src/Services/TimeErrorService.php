@@ -26,8 +26,11 @@
  *   LATE_ARRIVAL          Clock-in after the shift start (SHIFT_1_START, or
  *                         SHIFT_2_START when clocking in after 13:00).
  *   EARLY_DEPARTURE       Last clock-out before SHIFT_2_END.
- *   ABSENCE               Past weekday (Mon-Fri, GUESS) with no clock-in.
- *                         Only counted for the employee role.
+ *   ABSENCE               Past weekday (Mon-Fri, GUESS) with no clock-in,
+ *                         counted only from the day after the account was created.
+ *
+ * Only active accounts with the employee role are checked. Managers and
+ * administrators are not required to clock in, so they are left out.
  *
  * Every incident carries impact_seconds when a duration makes sense; the
  * per-agent 'durations' array sums them by error code.
@@ -70,9 +73,9 @@ class TimeErrorService
     {
         $db = $this->db ?? Database::getInstance()->getConnection();
 
-        $sql = "SELECT u.id, u.username, u.first_name, u.last_name, r.name AS role
+        $sql = "SELECT u.id, u.username, u.first_name, u.last_name, r.name AS role, u.created_at
                 FROM users u JOIN roles r ON r.id = u.role_id
-                WHERE u.is_active = 1";
+                WHERE u.is_active = 1 AND r.name = 'employee'";
         $params = [];
         if ($search !== '') {
             $sql .= " AND (u.first_name LIKE ? OR u.last_name LIKE ? OR u.username LIKE ?)";
@@ -134,6 +137,7 @@ class TimeErrorService
                 'username'              => $u['username'],
                 'name'                  => trim($u['first_name'] . ' ' . $u['last_name']),
                 'role'                  => $u['role'] ?? null,
+                'created_on'            => !empty($u['created_at']) ? substr((string) $u['created_at'], 0, 10) : null,
                 'days_checked'          => 0,
                 'days_with_errors'      => 0,
                 'error_count'           => 0,
@@ -193,6 +197,11 @@ class TimeErrorService
             }
             for ($d = new DateTime($from); $d->format('Y-m-d') <= $to && $d->format('Y-m-d') < $today; $d->modify('+1 day')) {
                 $date = $d->format('Y-m-d');
+                // Not absent before the account existed, nor on the day it was
+                // created (the account may have been made after the shift started)
+                if ($s['created_on'] !== null && $date <= $s['created_on']) {
+                    continue;
+                }
                 if ((int) $d->format('N') >= 6 || isset($worked[$uid][$date])) {
                     continue;
                 }

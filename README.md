@@ -1,6 +1,6 @@
-# Virtual Time Clock
+# ClockWise
 
-A web-based time clock for employees. Staff clock in, take their break and clock out from the browser, and every action is recorded so they are paid for exactly the time they worked. Managers and administrators get a live attendance register, CSV exports and a report that flags clocking mistakes before payroll.
+ClockWise (repository: virtual-time-clock) is a web-based time clock for employees. Staff clock in, take their break and clock out from the browser, and every action is recorded so they are paid for exactly the time they worked. Managers and administrators get a live attendance register, CSV exports and a report that flags clocking mistakes before payroll.
 
 Built with **PHP 8**, **MariaDB/MySQL**, **Tailwind CSS** and **vanilla JavaScript**. No framework and no Composer dependencies.
 
@@ -29,6 +29,7 @@ Built with **PHP 8**, **MariaDB/MySQL**, **Tailwind CSS** and **vanilla JavaScri
 
   It also shows the difference between the recorded work time and the time the clock actions actually support, and can be exported as CSV.
 - **Time error reports**: review the reports employees send in and mark them resolved with a note.
+- **Correct times** (Management → Correct Times, or "Correct times" next to any error or report): fix an agent's clock-in, break and clock-out times for a day, for example when they were on time but forgot to clock in. A reason is required, and every correction is kept with who made it, when, and the times before and after. The day's totals are recalculated and the Time Errors report updates on its own. Correcting from an employee report also resolves that report. Managers can correct employees only (not themselves); administrators can correct anyone.
 
 ### Security
 - Passwords hashed with `password_hash()`, session fixation protection and login lockout.

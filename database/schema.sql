@@ -7,6 +7,7 @@
 -- =============================================================
 
 -- Drop tables in reverse FK dependency order
+DROP TABLE IF EXISTS `time_corrections`;
 DROP TABLE IF EXISTS `time_error_reports`;
 DROP TABLE IF EXISTS `breaks`;
 DROP TABLE IF EXISTS `time_actions`;
@@ -147,5 +148,31 @@ CREATE TABLE `time_error_reports` (
         ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT `fk_reports_resolver`
         FOREIGN KEY (`resolved_by`) REFERENCES `users` (`id`)
+        ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================================
+-- TIME_CORRECTIONS
+-- Audit trail of manager/admin corrections to clock times
+-- =============================================================
+CREATE TABLE `time_corrections` (
+    `id`          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `user_id`     INT UNSIGNED NOT NULL                 COMMENT 'Agent whose times were corrected',
+    `work_date`   DATE         NOT NULL,
+    `edited_by`   INT UNSIGNED NULL                     COMMENT 'Manager/admin who made the correction',
+    `reason`      TEXT         NOT NULL,
+    `before_json` TEXT         NOT NULL                 COMMENT 'Day and clock actions before the change',
+    `after_json`  TEXT         NOT NULL                 COMMENT 'Day and clock actions after the change',
+    `report_id`   INT UNSIGNED NULL                     COMMENT 'time_error_reports row resolved by this correction',
+    `created_at`  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    INDEX `idx_corrections_user_date` (`user_id`, `work_date`),
+    INDEX `idx_corrections_created`   (`created_at`),
+
+    CONSTRAINT `fk_corrections_user`
+        FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_corrections_editor`
+        FOREIGN KEY (`edited_by`) REFERENCES `users` (`id`)
         ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

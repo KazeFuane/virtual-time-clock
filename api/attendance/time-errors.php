@@ -47,11 +47,17 @@ try {
         $agents = $db->query("
             SELECT u.id, u.username, u.first_name, u.last_name, r.name AS role
             FROM users u JOIN roles r ON r.id = u.role_id
-            WHERE u.is_active = 1
-            ORDER BY r.name = 'employee' DESC, u.last_name, u.first_name
+            WHERE u.is_active = 1 AND r.name = 'employee'
+            ORDER BY u.last_name, u.first_name
         ")->fetchAll();
+        // Only employees are checked for time errors, so a manager or admin
+        // sees the chosen employee, or the first one by default.
         if (!empty($_GET['user_id'])) {
             $targetId = (int) $_GET['user_id'];
+        } elseif ($agents) {
+            $targetId = (int) $agents[0]['id'];
+        } else {
+            Response::error('There are no active employees to show.', 404);
         }
     }
 

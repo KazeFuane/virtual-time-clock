@@ -6,7 +6,7 @@ require_once __DIR__ . '/../../src/bootstrap.php';
 
 $currentUser = AdminMiddleware::requireManager();
 
-$pageTitle = 'Time Errors &mdash; Virtual Time Clock';
+$pageTitle = 'Time Errors &mdash; ClockWise';
 $breadcrumbs = [
     ['label' => 'Time Clock', 'url' => '/virtual-time-clock/public/dashboard.php'],
     ['label' => 'Administration', 'url' => '/virtual-time-clock/public/admin/index.php'],
@@ -26,6 +26,7 @@ ob_start();
             <input type="date" id="te-from" class="bg-[#1a1226] border border-[#2d1e44] text-xs font-mono text-gray-200 rounded-lg px-3 py-1.5">
             <span class="text-gray-500 text-xs">to</span>
             <input type="date" id="te-to" class="bg-[#1a1226] border border-[#2d1e44] text-xs font-mono text-gray-200 rounded-lg px-3 py-1.5">
+            <a href="/virtual-time-clock/public/admin/time-corrections.php" class="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold">Correct times</a>
             <button id="te-csv" class="px-3 py-1.5 rounded-lg bg-emerald-700/50 hover:bg-emerald-600/60 border border-emerald-600 text-emerald-200 text-xs font-semibold">Summary CSV</button>
             <button id="te-csv-detail" class="px-3 py-1.5 rounded-lg bg-[#221532] hover:bg-[#2c1c3f] border border-[#312048] text-gray-200 text-xs font-semibold">Details CSV</button>
         </div>
@@ -115,7 +116,8 @@ $pageScripts = <<<'HTML'
             const rows = a.incidents.map(x => `
                 <tr><td class="py-1 pr-3 font-mono text-gray-400">${esc(x.work_date)}</td>
                     <td class="py-1 pr-3 text-red-300">${esc(x.label)}</td>
-                    <td class="py-1 text-gray-300">${esc(x.detail)}</td></tr>`).join("");
+                    <td class="py-1 text-gray-300">${esc(x.detail)}</td>
+                    <td class="py-1 pl-3 text-right"><a href="/virtual-time-clock/public/admin/time-corrections.php?user_id=${a.user_id}&date=${esc(x.work_date)}" class="text-purple-300 hover:underline whitespace-nowrap">Correct times</a></td></tr>`).join("");
             return `
                 <tr class="hover:bg-[#1a1226]/50 ${a.incidents.length ? "cursor-pointer" : ""}" data-toggle="${i}">
                     <td class="py-2.5 px-4"><div class="font-semibold text-white">${esc(a.name)}</div><div class="text-[11px] text-gray-500 font-mono">@${esc(a.username)}</div></td>
@@ -156,6 +158,7 @@ $pageScripts = <<<'HTML'
             const action = r.status === "OPEN" ? `
                 <div class="flex items-center gap-2 mt-2">
                     <input type="text" maxlength="1000" placeholder="What did you fix? (optional)" class="flex-1 bg-[#120a1c] border border-[#2d1e44] text-xs text-gray-200 rounded-lg px-3 py-1" data-note="${r.id}">
+                    <a href="/virtual-time-clock/public/admin/time-corrections.php?user_id=${r.user_id}&date=${esc(r.work_date)}&report_id=${r.id}" class="px-3 py-1 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-[11px] font-semibold">Correct times</a>
                     <button class="px-3 py-1 rounded-lg bg-emerald-700/60 hover:bg-emerald-600/70 border border-emerald-600 text-emerald-100 text-[11px] font-semibold" data-resolve="${r.id}">Mark resolved</button>
                 </div>` : `<div class="text-[11px] text-emerald-300 mt-1">Resolved by ${esc(r.resolver_first_name || "")} ${esc(r.resolver_last_name || "")}${r.resolution_note ? ": " + esc(r.resolution_note) : ""}</div>`;
             return `

@@ -26,8 +26,8 @@ $user = $authService->login($username, $password);
 if (!$user) {
     $remaining = $authService->getLockoutRemaining();
     if ($remaining > 0) {
-        $mins = ceil($remaining / 60);
-        Response::error("Too many failed attempts. Account locked for {$mins} more minutes.", 429);
+        $mins = (int) ceil($remaining / 60);
+        Response::error("Too many failed attempts. Try again in {$mins} minute" . ($mins === 1 ? '' : 's') . '.', 429);
     }
     Response::error('Invalid username or password.', 401);
 }

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign In &mdash; Virtual Time Clock</title>
+    <title>Sign In &mdash; <?= htmlspecialchars(APP_NAME) ?></title>
     <meta name="csrf-token" content="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -21,8 +21,8 @@
             <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-900/40 mb-3">
                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             </div>
-            <h1 class="text-2xl font-bold tracking-tight text-white">Virtual Time Clock</h1>
-            <p class="text-sm text-purple-300/70 mt-1">ByteDance Sahara Employee Portal</p>
+            <h1 class="text-2xl font-bold tracking-tight text-white"><?= htmlspecialchars(APP_NAME) ?></h1>
+            <p class="text-sm text-purple-300/70 mt-1">Employee time &amp; attendance</p>
         </div>
 
         <!-- Login Card -->
@@ -71,7 +71,7 @@
         </div>
 
         <div class="text-center mt-6 text-xs text-gray-500">
-            Virtual Time Clock v1.0.0 &bull; Africa/Casablanca
+            <?= htmlspecialchars(APP_NAME) ?> v<?= htmlspecialchars(APP_VERSION) ?> &bull; <?= htmlspecialchars(APP_TIMEZONE) ?>
         </div>
     </div>
 

@@ -53,7 +53,7 @@ define('DB_PASSWORD', env('DB_PASSWORD', ''));
 // =====================================================
 define('APP_ENV',      env('APP_ENV', 'development'));
 define('APP_TIMEZONE', env('APP_TIMEZONE', 'Africa/Casablanca'));
-define('APP_NAME',     env('APP_NAME', 'Virtual Time Clock'));
+define('APP_NAME',     env('APP_NAME', 'ClockWise'));
 define('APP_VERSION',  env('APP_VERSION', '1.0.0'));
 
 // =====================================================
@@ -72,6 +72,13 @@ define('SHIFT_1_END',   env('SHIFT_1_END',   '12:00:00'));
 define('SHIFT_2_START', env('SHIFT_2_START', '14:00:00'));
 define('SHIFT_2_END',   env('SHIFT_2_END',   '18:00:00'));
 define('LATE_TOLERANCE_SECONDS', (int) env('LATE_TOLERANCE_SECONDS', '0')); // Can be 0 or small grace window in seconds
+
+// =====================================================
+// Login lockout: after LOGIN_MAX_ATTEMPTS wrong passwords,
+// sign-in is blocked for LOGIN_LOCKOUT_SECONDS (default 5 minutes)
+// =====================================================
+define('LOGIN_MAX_ATTEMPTS',    (int) env('LOGIN_MAX_ATTEMPTS', '5'));
+define('LOGIN_LOCKOUT_SECONDS', (int) env('LOGIN_LOCKOUT_SECONDS', '300'));
 
 // =====================================================
 // Session Configuration

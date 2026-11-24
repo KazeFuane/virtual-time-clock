@@ -19,7 +19,7 @@ $currentUser = AuthMiddleware::getCurrentUser();
                 <?php endif; ?>
             <?php endforeach; ?>
         <?php else: ?>
-            <span class="text-gray-200 font-medium">Virtual Time Clock</span>
+            <span class="text-gray-200 font-medium"><?= htmlspecialchars(APP_NAME) ?></span>
         <?php endif; ?>
     </div>
 

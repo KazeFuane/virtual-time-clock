@@ -1,22 +1,50 @@
 <?php
 $currentUri = $_SERVER['REQUEST_URI'] ?? '';
 $currentUser = AuthMiddleware::getCurrentUser();
+
+// Highlight the link of the page being viewed.
+$currentPath = parse_url($currentUri, PHP_URL_PATH) ?: '';
+if (str_ends_with($currentPath, '/')) {
+    $currentPath .= 'index.php';
+}
+parse_str(parse_url($currentUri, PHP_URL_QUERY) ?: '', $currentQuery);
+$navActive = function (string $href) use ($currentPath, $currentQuery): bool {
+    $path = parse_url($href, PHP_URL_PATH);
+    if ($path !== $currentPath) {
+        return false;
+    }
+    parse_str(parse_url($href, PHP_URL_QUERY) ?: '', $q);
+    return !isset($q['module']) || ($currentQuery['module'] ?? null) === $q['module'];
+};
+// The current page keeps the same look as when the mouse is over the link
+$activeClass    = 'bg-[#221530] text-white';     // top-level links (same as their hover)
+$activeSubClass = 'bg-[#1c1228] text-gray-200';  // Time Management links (same as their hover)
+$timeMgmtActive = $navActive('/virtual-time-clock/public/dashboard.php')
+    || $navActive('/virtual-time-clock/public/history.php')
+    || $navActive('/virtual-time-clock/public/time-errors.php')
+    || $navActive('/virtual-time-clock/public/placeholder.php?module=My%20Schedule');
 ?>
 <aside id="app-sidebar" class="w-64 bg-[#140c1d] border-r border-[#261936] flex flex-col justify-between shrink-0 transition-transform duration-300 z-40">
     <!-- Top Branding & Navigation -->
     <div class="flex flex-col h-full overflow-y-auto">
         <!-- Brand / Org Info matching screenshot -->
         <div class="px-5 py-4 border-b border-[#261936]">
-            <div class="text-xs uppercase tracking-wider text-gray-400 font-semibold">Portal 2</div>
-            <div class="text-sm font-bold text-white tracking-wide mt-0.5">ByteDance</div>
-            <div class="text-xs text-purple-400 font-medium">ByteDance_Sahara</div>
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center shrink-0">
+                    <svg class="w-[18px] h-[18px] text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+                <div>
+                    <div class="text-sm font-bold text-white tracking-wide"><?= htmlspecialchars(APP_NAME) ?></div>
+                    <div class="text-xs text-purple-400 font-medium">Time &amp; attendance</div>
+                </div>
+            </div>
         </div>
 
         <!-- Navigation Links -->
         <nav class="flex-1 px-3 py-4 space-y-1 text-sm font-medium">
             <!-- Time Management (Collapsible Group) -->
             <div>
-                <button type="button" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-gray-200 hover:bg-[#221530] hover:text-white transition group" onclick="toggleNavGroup('time-mgmt-group', 'time-mgmt-icon')">
+                <button type="button" class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg <?= $timeMgmtActive ? $activeClass : 'text-gray-200' ?> hover:bg-[#221530] hover:text-white transition group" onclick="toggleNavGroup('time-mgmt-group', 'time-mgmt-icon')">
                     <span class="flex items-center gap-2.5">
                         <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         <span>Time Management</span>
@@ -24,43 +52,43 @@ $currentUser = AuthMiddleware::getCurrentUser();
                     <svg id="time-mgmt-icon" class="w-3.5 h-3.5 text-gray-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                 </button>
                 <div id="time-mgmt-group" class="pl-7 pr-2 py-1 space-y-1">
-                    <a href="/virtual-time-clock/public/dashboard.php" class="block px-3 py-1.5 rounded-md text-xs <?= str_contains($currentUri, 'dashboard.php') ? 'bg-[#2e1c42] text-purple-300 font-semibold' : 'text-gray-400 hover:text-gray-200 hover:bg-[#1c1228]' ?> transition">
+                    <a href="/virtual-time-clock/public/dashboard.php" class="block px-3 py-1.5 rounded-md text-xs <?= $navActive('/virtual-time-clock/public/dashboard.php') ? $activeSubClass : 'text-gray-400 hover:text-gray-200 hover:bg-[#1c1228]' ?> transition">
                         Virtual Time Clock
                     </a>
-                    <a href="/virtual-time-clock/public/history.php" class="block px-3 py-1.5 rounded-md text-xs <?= str_contains($currentUri, 'history.php') ? 'bg-[#2e1c42] text-purple-300 font-semibold' : 'text-gray-400 hover:text-gray-200 hover:bg-[#1c1228]' ?> transition">
+                    <a href="/virtual-time-clock/public/history.php" class="block px-3 py-1.5 rounded-md text-xs <?= $navActive('/virtual-time-clock/public/history.php') ? $activeSubClass : 'text-gray-400 hover:text-gray-200 hover:bg-[#1c1228]' ?> transition">
                         My History
                     </a>
-                    <a href="/virtual-time-clock/public/time-errors.php" class="block px-3 py-1.5 rounded-md text-xs <?= str_contains($currentUri, '/public/time-errors.php') ? 'bg-[#2e1c42] text-purple-300 font-semibold' : 'text-gray-400 hover:text-gray-200 hover:bg-[#1c1228]' ?> transition">
+                    <a href="/virtual-time-clock/public/time-errors.php" class="block px-3 py-1.5 rounded-md text-xs <?= $navActive('/virtual-time-clock/public/time-errors.php') ? $activeSubClass : 'text-gray-400 hover:text-gray-200 hover:bg-[#1c1228]' ?> transition">
                         Summary of time errors
                     </a>
-                    <a href="/virtual-time-clock/public/placeholder.php?module=My%20Schedule" class="block px-3 py-1.5 rounded-md text-xs text-gray-400 hover:text-gray-200 hover:bg-[#1c1228] transition">
+                    <a href="/virtual-time-clock/public/placeholder.php?module=My%20Schedule" class="block px-3 py-1.5 rounded-md text-xs <?= $navActive('/virtual-time-clock/public/placeholder.php?module=My%20Schedule') ? $activeSubClass : 'text-gray-400 hover:text-gray-200 hover:bg-[#1c1228]' ?> transition">
                         My Schedule
                     </a>
                 </div>
             </div>
 
             <!-- Future Modules Placeholders -->
-            <a href="/virtual-time-clock/public/placeholder.php?module=Quality%20Knowledge" class="flex items-center justify-between px-3 py-2.5 rounded-lg text-gray-300 hover:bg-[#221530] hover:text-white transition">
+            <a href="/virtual-time-clock/public/placeholder.php?module=Quality%20Knowledge" class="flex items-center justify-between px-3 py-2.5 rounded-lg <?= $navActive('/virtual-time-clock/public/placeholder.php?module=Quality%20Knowledge') ? $activeClass : 'text-gray-300 hover:bg-[#221530] hover:text-white' ?> transition">
                 <span>Quality Knowledge</span>
                 <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
             </a>
 
-            <a href="/virtual-time-clock/public/placeholder.php?module=Quality%20Grid" class="flex items-center justify-between px-3 py-2.5 rounded-lg text-gray-300 hover:bg-[#221530] hover:text-white transition">
+            <a href="/virtual-time-clock/public/placeholder.php?module=Quality%20Grid" class="flex items-center justify-between px-3 py-2.5 rounded-lg <?= $navActive('/virtual-time-clock/public/placeholder.php?module=Quality%20Grid') ? $activeClass : 'text-gray-300 hover:bg-[#221530] hover:text-white' ?> transition">
                 <span>Quality Grid</span>
                 <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
             </a>
 
-            <a href="/virtual-time-clock/public/placeholder.php?module=Communication" class="flex items-center justify-between px-3 py-2.5 rounded-lg text-gray-300 hover:bg-[#221530] hover:text-white transition">
+            <a href="/virtual-time-clock/public/placeholder.php?module=Communication" class="flex items-center justify-between px-3 py-2.5 rounded-lg <?= $navActive('/virtual-time-clock/public/placeholder.php?module=Communication') ? $activeClass : 'text-gray-300 hover:bg-[#221530] hover:text-white' ?> transition">
                 <span>Communication</span>
                 <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
             </a>
 
-            <a href="/virtual-time-clock/public/placeholder.php?module=Back%20Office%20Tools" class="flex items-center justify-between px-3 py-2.5 rounded-lg text-gray-300 hover:bg-[#221530] hover:text-white transition">
+            <a href="/virtual-time-clock/public/placeholder.php?module=Back%20Office%20Tools" class="flex items-center justify-between px-3 py-2.5 rounded-lg <?= $navActive('/virtual-time-clock/public/placeholder.php?module=Back%20Office%20Tools') ? $activeClass : 'text-gray-300 hover:bg-[#221530] hover:text-white' ?> transition">
                 <span>Back Office Tools</span>
                 <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
             </a>
 
-            <a href="/virtual-time-clock/public/placeholder.php?module=Production%20Monitoring" class="flex items-center justify-between px-3 py-2.5 rounded-lg text-gray-300 hover:bg-[#221530] hover:text-white transition">
+            <a href="/virtual-time-clock/public/placeholder.php?module=Production%20Monitoring" class="flex items-center justify-between px-3 py-2.5 rounded-lg <?= $navActive('/virtual-time-clock/public/placeholder.php?module=Production%20Monitoring') ? $activeClass : 'text-gray-300 hover:bg-[#221530] hover:text-white' ?> transition">
                 <span>Production Monitoring</span>
                 <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
             </a>
@@ -69,12 +97,15 @@ $currentUser = AuthMiddleware::getCurrentUser();
                 <!-- Admin Panel Link -->
                 <div class="pt-4 mt-2 border-t border-[#261936]">
                     <span class="px-3 text-[10px] uppercase font-bold tracking-wider text-purple-400">Management</span>
-                    <a href="/virtual-time-clock/public/admin/index.php" class="flex items-center justify-between px-3 py-2 rounded-lg text-gray-300 hover:bg-[#221530] hover:text-white transition mt-1">
+                    <a href="/virtual-time-clock/public/admin/index.php" class="flex items-center justify-between px-3 py-2 rounded-lg <?= $navActive('/virtual-time-clock/public/admin/index.php') ? $activeClass : 'text-gray-300 hover:bg-[#221530] hover:text-white' ?> transition mt-1">
                         <span>Admin Console</span>
                         <span class="text-[10px] bg-purple-900 text-purple-300 font-semibold px-1.5 py-0.5 rounded">Admin</span>
                     </a>
-                    <a href="/virtual-time-clock/public/admin/time-errors.php" class="flex items-center justify-between px-3 py-2 rounded-lg text-gray-300 hover:bg-[#221530] hover:text-white transition mt-1">
+                    <a href="/virtual-time-clock/public/admin/time-errors.php" class="flex items-center justify-between px-3 py-2 rounded-lg <?= $navActive('/virtual-time-clock/public/admin/time-errors.php') ? $activeClass : 'text-gray-300 hover:bg-[#221530] hover:text-white' ?> transition mt-1">
                         <span>Time Errors</span>
+                    </a>
+                    <a href="/virtual-time-clock/public/admin/time-corrections.php" class="flex items-center justify-between px-3 py-2 rounded-lg <?= $navActive('/virtual-time-clock/public/admin/time-corrections.php') ? $activeClass : 'text-gray-300 hover:bg-[#221530] hover:text-white' ?> transition mt-1">
+                        <span>Correct Times</span>
                     </a>
                 </div>
             <?php endif; ?>
@@ -93,7 +124,7 @@ $currentUser = AuthMiddleware::getCurrentUser();
                 </a>
             </div>
             <div class="px-2 text-[11px] text-gray-500">
-                Portal v1.0.0
+                <?= htmlspecialchars(APP_NAME) ?> v<?= htmlspecialchars(APP_VERSION) ?>
             </div>
         </div>
     </div>

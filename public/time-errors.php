@@ -8,7 +8,7 @@ require_once __DIR__ . '/../src/bootstrap.php';
 $currentUser = AuthMiddleware::requireAuth();
 $isManager = in_array($currentUser['role'], ['administrator', 'manager'], true);
 
-$pageTitle = 'Summary of time errors &mdash; Virtual Time Clock';
+$pageTitle = 'Summary of time errors &mdash; ClockWise';
 $breadcrumbs = [
     ['label' => 'Time Clock', 'url' => '/virtual-time-clock/public/dashboard.php'],
     ['label' => 'Time Management', 'url' => '#'],
@@ -278,7 +278,7 @@ $pageScripts = <<<'HTML'
                 html += `<tr class="bg-[#110a19]"><td colspan="4" class="px-5 py-2">
                     <div class="divide-y divide-[#231733]">${items.map(i => {
                         const reported = openReports.some(r => r.work_date === i.work_date && r.error_code === i.code);
-                        const action = !self ? "" : reported
+                        const action = !self ? (isManager ? `<a href="/virtual-time-clock/public/admin/time-corrections.php?user_id=${s.user_id}&date=${esc(i.work_date)}" class="px-3 py-1 rounded-lg bg-[#221532] hover:bg-[#2c1c3f] border border-[#312048] text-purple-200 text-[11px] font-semibold">Correct times</a>` : "") : reported
                             ? `<span class="text-[11px] text-amber-300 font-semibold">Reported</span>`
                             : `<button class="px-3 py-1 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-[11px] font-semibold" data-report="${esc(i.work_date)}|${esc(i.code)}">Report to manager</button>`;
                         return `<div class="py-2.5 flex items-start justify-between gap-4">

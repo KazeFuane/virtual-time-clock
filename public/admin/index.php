@@ -6,7 +6,7 @@ require_once __DIR__ . '/../../src/bootstrap.php';
 
 $currentUser = AdminMiddleware::requireManager();
 
-$pageTitle = 'Admin Console &mdash; Virtual Time Clock';
+$pageTitle = 'Admin Console &mdash; ClockWise';
 $breadcrumbs = [
     ['label' => 'Time Clock', 'url' => '/virtual-time-clock/public/dashboard.php'],
     ['label' => 'Administration', 'url' => '#'],

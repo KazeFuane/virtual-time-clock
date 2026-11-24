@@ -137,12 +137,13 @@ class AuthService
 
     /**
      * Check if the user is locked out due to too many failed attempts.
-     * Locks out for 15 minutes after 5 failures.
+     * Locks out for LOGIN_LOCKOUT_SECONDS after LOGIN_MAX_ATTEMPTS failures
+     * (see config/config.php; default 5 minutes after 5 failures).
      */
     private function isLockedOut(): bool
     {
-        $maxAttempts  = 5;
-        $lockDuration = 900; // 15 minutes
+        $maxAttempts  = LOGIN_MAX_ATTEMPTS;
+        $lockDuration = LOGIN_LOCKOUT_SECONDS;
 
         $attempts = $_SESSION['failed_attempts'] ?? 0;
         $lastFail = $_SESSION['last_failed_attempt'] ?? 0;
@@ -163,8 +164,8 @@ class AuthService
      */
     public function getLockoutRemaining(): int
     {
-        $maxAttempts  = 5;
-        $lockDuration = 900;
+        $maxAttempts  = LOGIN_MAX_ATTEMPTS;
+        $lockDuration = LOGIN_LOCKOUT_SECONDS;
 
         $attempts = $_SESSION['failed_attempts'] ?? 0;
         $lastFail = $_SESSION['last_failed_attempt'] ?? 0;
