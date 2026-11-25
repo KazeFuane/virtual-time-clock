@@ -16,9 +16,14 @@ Built with **PHP 8**, **MariaDB/MySQL**, **Tailwind CSS** and **vanilla JavaScri
 - **My history**: pick any date to see the full timeline of clock actions and totals for that day.
 - **Summary of time errors**: employees can see the clocking problems on their own days and report a time error to their manager.
 
+### For everyone
+- **Three languages**: English, French and Arabic, chosen from the language picker in the header or on the sign-in page. Arabic switches the whole layout to right-to-left. The choice is saved per user (and in a cookie, so the sign-in page remembers it). Any text without a translation falls back to English. To add a language, copy `lang/fr.php` to `lang/<code>.php`, set its name and direction and translate the lines; it appears in the picker on its own.
+- **Light and dark mode**: a toggle in the header (and on the sign-in page) switches themes. Dark is the default. The choice is saved per user, so it follows them to any browser.
+- **Search** in the header: press `/` or `Ctrl+K` to jump to it. Employees search the app's pages; managers and administrators can also find people (managers see employees, administrators see any active account) and jump straight to their schedule or time errors.
+
 ### For managers and administrators
 - **Attendance register** for any date, showing each employee's start and end times, work and break hours, punctuality and status.
-- **CSV export** of the register for payroll.
+- **CSV exports** for payroll: the attendance register, the time errors Summary and Details sheets, and the team plan. Files use UTF-16 with tab separators, so they open straight into columns in Excel whatever the regional settings, keep accented and Arabic names readable, and also open in Google Sheets and LibreOffice. Cells starting with `=`, `+` or `@` are escaped so a spreadsheet never runs them as formulas.
 - **Employee management** (administrators): create and update accounts and roles.
 - **Time errors by agent**: a read-only report over a date range that lists every clocking problem per employee, such as:
   - missing clock-out or clock-in
@@ -63,7 +68,24 @@ mysql -u root -e "CREATE DATABASE virtual_time_clock CHARACTER SET utf8mb4 COLLA
 mysql -u root virtual_time_clock < virtual-time-clock/database/schema.sql
 mysql -u root virtual_time_clock < virtual-time-clock/database/seed.sql
 ```
-If you already have a database from an older version, run the migrations in `database/migrations/` instead of the full schema.
+If you already have a database from an older version, run the migrations in `database/migrations/` instead of the full schema, oldest first, skipping any you have already applied:
+```bash
+mysql -u root virtual_time_clock < virtual-time-clock/database/migrations/2026_11_22_time_error_reports.sql
+mysql -u root virtual_time_clock < virtual-time-clock/database/migrations/2026_11_24_time_corrections.sql
+mysql -u root virtual_time_clock < virtual-time-clock/database/migrations/2026_11_25_schedules.sql
+mysql -u root virtual_time_clock < virtual-time-clock/database/migrations/2026_11_25_leaves.sql
+mysql -u root virtual_time_clock < virtual-time-clock/database/migrations/2026_11_25_user_preferences.sql
+```
+
+| Migration | Adds |
+|---|---|
+| `2026_11_22_time_error_reports.sql` | Time error reports sent by employees |
+| `2026_11_24_time_corrections.sql` | Time corrections and their audit trail |
+| `2026_11_25_schedules.sql` | Schedules, schedule assignments and single-day changes |
+| `2026_11_25_leaves.sql` | Leave and PTO records |
+| `2026_11_25_user_preferences.sql` | Per-user preferences (language, light/dark mode) |
+
+Every migration uses `CREATE TABLE IF NOT EXISTS`, so running one twice is harmless. The app also creates the time corrections, schedules, leave and preferences tables on first use if their migration was not run.
 
 ### 3. Configure
 Copy `.env.example` to `.env` and fill in your database settings:
@@ -75,7 +97,7 @@ DB_USER=root
 DB_PASSWORD=
 APP_TIMEZONE=Africa/Casablanca
 ```
-Break length, breaks per day, shift times and session lifetime can also be changed in `.env` (see `config/config.php` for every option).
+Break length, breaks per day, login lockout and session lifetime can also be changed in `.env` (see `config/config.php` for every option). Each agent's working hours come from their schedule (Management → Plan Schedules), not from `.env`. Languages, themes, schedules and leave need no extra `.env` settings.
 
 ### 4. Run it
 The app expects to be served from a folder named `virtual-time-clock`, so serve the **parent** folder:
@@ -102,18 +124,26 @@ The seed data creates these **development-only** accounts. Change or remove them
 ```
 virtual-time-clock/
 ├── api/                  JSON endpoints
-│   ├── auth/             login, logout, current user
-│   ├── attendance/       clock actions, today, history, own time errors
-│   └── admin/            attendance register and CSV, users, time errors, error reports
+│   ├── auth/             login, logout, current user, language and theme choice
+│   ├── attendance/       clock actions, today, history, own schedule, own time errors
+│   ├── admin/            attendance register, users, time errors, error reports,
+│   │                     corrections, schedules and leave (JSON and CSV)
+│   └── search.php        people search for the header
 ├── config/               app settings (.env reader) and database connection
 ├── database/             schema, seed data and migrations
-├── public/               pages: dashboard, history, time errors, admin console
-│   └── assets/js/        API helper, live clock and timers
+├── lang/                 translations: fr.php (French), ar.php (Arabic)
+├── public/               pages: dashboard, history, schedule, time errors, admin console, leave
+│   └── assets/
+│       ├── css/          light theme and right-to-left styles
+│       └── js/           API helper, live clock and timers, theme switch
 ├── src/
-│   ├── Helpers/          JSON responses, time formatting, validation
+│   ├── Helpers/          JSON responses, time formatting, validation, CSV export,
+│   │                     translations, theme
 │   ├── Middleware/       auth, admin role and CSRF checks
-│   └── Services/         attendance logic, auth, users, time error checks and reports
-└── views/                layout, header, sidebar and login view
+│   └── Services/         attendance, auth, users, time errors and reports,
+│                         corrections, schedules, leave
+└── views/                layout, header (search, language picker, theme toggle),
+                          sidebar and login view
 ```
 
 ---
