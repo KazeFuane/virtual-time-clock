@@ -56,7 +56,7 @@ async function loadTodayAttendance() {
         currentAttendance = res.data;
         renderAttendanceUI(res.data);
     } else {
-        showToast(res.message || 'Failed to load attendance info', 'error');
+        showToast(res.message || t('Failed to load attendance info'), 'error');
     }
 }
 
@@ -81,13 +81,15 @@ function renderAttendanceUI(att) {
         if (att.punctuality) {
             const p = att.punctuality;
             if (p.punctuality === 'LATE' || p.punctuality === 'DELAYED_NOT_IN') {
-                punctualityEl.innerHTML = `<span class="text-rose-400 font-bold">Delay: ${p.delay_text}</span>`;
+                punctualityEl.innerHTML = `<span class="text-rose-400 font-bold">${t('Delay: {d}', {d: p.delay_text})}</span>`;
             } else if (p.punctuality === 'ABSENT') {
-                punctualityEl.innerHTML = `<span class="text-rose-500 font-bold uppercase">Absent</span>`;
+                punctualityEl.innerHTML = `<span class="text-rose-500 font-bold uppercase">${t('Absent')}</span>`;
+            } else if (p.punctuality === 'DAY_OFF') {
+                punctualityEl.innerHTML = `<span class="text-gray-400 font-medium">${p.label === 'Day off' ? t('No shift today') : t('Worked on a day off')}</span>`;
             } else if (p.punctuality === 'ON_TIME') {
-                punctualityEl.innerHTML = `<span class="text-emerald-400 font-bold">On Time &check;</span>`;
+                punctualityEl.innerHTML = `<span class="text-emerald-400 font-bold">${t('On Time')} &check;</span>`;
             } else {
-                punctualityEl.innerHTML = `<span class="text-gray-400 font-medium">Shift Upcoming</span>`;
+                punctualityEl.innerHTML = `<span class="text-gray-400 font-medium">${t('Shift Upcoming')}</span>`;
             }
         } else {
             punctualityEl.textContent = '--';
@@ -98,20 +100,20 @@ function renderAttendanceUI(att) {
     if (statusPill && statusHint) {
         if (status === 'NOT_STARTED') {
             statusPill.className = 'px-3 py-1 rounded-full text-xs font-semibold bg-gray-800 text-gray-300 border border-gray-700';
-            statusPill.textContent = 'NOT STARTED';
-            statusHint.textContent = 'Ready to begin your shift.';
+            statusPill.textContent = t('NOT STARTED');
+            statusHint.textContent = t('Ready to begin your shift.');
         } else if (status === 'WORKING') {
             statusPill.className = 'px-3 py-1 rounded-full text-xs font-semibold bg-emerald-950 text-emerald-300 border border-emerald-700 animate-pulse';
-            statusPill.textContent = 'WORKING';
-            statusHint.textContent = 'You are currently logged in and working.';
+            statusPill.textContent = t('WORKING');
+            statusHint.textContent = t('You are currently logged in and working.');
         } else if (status === 'ON_BREAK') {
             statusPill.className = 'px-3 py-1 rounded-full text-xs font-semibold bg-amber-950 text-amber-300 border border-amber-700';
-            statusPill.textContent = 'ON BREAK';
-            statusHint.textContent = 'You are currently on break (max 45 min daily allowance).';
+            statusPill.textContent = t('ON BREAK');
+            statusHint.textContent = t('You are currently on break (max 45 min daily allowance).');
         } else if (status === 'FINISHED') {
             statusPill.className = 'px-3 py-1 rounded-full text-xs font-semibold bg-purple-950 text-purple-300 border border-purple-700';
-            statusPill.textContent = 'FINISHED';
-            statusHint.textContent = 'Your workday is complete. See you tomorrow!';
+            statusPill.textContent = t('FINISHED');
+            statusHint.textContent = t('Your workday is complete. See you tomorrow!');
         }
     }
 
@@ -141,7 +143,7 @@ function renderAttendanceUI(att) {
     // Update Start button text if user has already worked today
     const btnStartText = btnStartWork ? btnStartWork.querySelector('span') : null;
     if (btnStartText) {
-        btnStartText.textContent = (status === 'FINISHED') ? 'Resume Workday' : 'Start Workday';
+        btnStartText.textContent = (status === 'FINISHED') ? t('Resume Workday') : t('Start Workday');
     }
 
     if (status === 'NOT_STARTED') {
@@ -199,25 +201,25 @@ function renderActionsTable(actions) {
     if (!tbody) return;
 
     if (actions.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="2" class="py-4 text-center text-xs text-gray-500">No actions recorded today yet.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="2" class="py-4 text-center text-xs text-gray-500">${t('No actions recorded today yet.')}</td></tr>`;
         return;
     }
 
     const actionLabels = {
-        'START_WORKDAY': { label: 'Start Workday', color: 'text-emerald-400', badge: 'WORKING', badgeColor: 'bg-emerald-950 text-emerald-300 border-emerald-800' },
-        'END_WORKDAY':   { label: 'End Workday', color: 'text-rose-400', badge: 'FINISHED', badgeColor: 'bg-purple-950 text-purple-300 border-purple-800' },
-        'START_BREAK':   { label: 'Start Break', color: 'text-purple-400', badge: 'ON BREAK', badgeColor: 'bg-amber-950 text-amber-300 border-amber-800' },
-        'END_BREAK':     { label: 'End Break', color: 'text-amber-400', badge: 'WORKING', badgeColor: 'bg-emerald-950 text-emerald-300 border-emerald-800' }
+        'START_WORKDAY': { label: t('Start Workday'), color: 'text-emerald-400', badge: t('WORKING'), badgeColor: 'bg-emerald-950 text-emerald-300 border-emerald-800' },
+        'END_WORKDAY':   { label: t('End Workday'), color: 'text-rose-400', badge: t('FINISHED'), badgeColor: 'bg-purple-950 text-purple-300 border-purple-800' },
+        'START_BREAK':   { label: t('Start Break'), color: 'text-purple-400', badge: t('ON BREAK'), badgeColor: 'bg-amber-950 text-amber-300 border-amber-800' },
+        'END_BREAK':     { label: t('End Break'), color: 'text-amber-400', badge: t('WORKING'), badgeColor: 'bg-emerald-950 text-emerald-300 border-emerald-800' }
     };
 
     let html = '';
     actions.forEach(a => {
-        const meta = actionLabels[a.action_type] || { label: a.action_type, color: 'text-gray-300', badge: 'EVENT', badgeColor: 'bg-gray-800 text-gray-300 border-gray-700' };
+        const meta = actionLabels[a.action_type] || { label: a.action_type, color: 'text-gray-300', badge: t('EVENT'), badgeColor: 'bg-gray-800 text-gray-300 border-gray-700' };
         html += `
             <tr class="border-b border-[#231733] hover:bg-[#1a1226]/50 transition">
                 <td class="py-2.5 px-4 font-mono text-xs text-gray-300">${a.action_time}</td>
                 <td class="py-2.5 px-4 text-xs font-semibold ${meta.color}">${meta.label}</td>
-                <td class="py-2.5 px-4 text-right">
+                <td class="py-2.5 px-4 text-end">
                     <span class="inline-block px-2 py-0.5 rounded text-[10px] font-semibold border ${meta.badgeColor}">
                         ${meta.badge}
                     </span>

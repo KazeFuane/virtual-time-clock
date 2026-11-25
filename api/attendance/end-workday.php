@@ -14,7 +14,7 @@ $user = AuthMiddleware::requireAuth();
 try {
     $attendanceService = new AttendanceService();
     $result = $attendanceService->endWorkday($user['id']);
-    Response::success('Workday ended successfully at ' . $result['time'] . '. Have a great rest!', $result);
+    Response::success(t('Workday ended successfully at {time}. Have a great rest!', ['time' => $result['time']]), $result);
 } catch (RuntimeException $e) {
     Response::error($e->getMessage(), 409);
 } catch (\Throwable $e) {

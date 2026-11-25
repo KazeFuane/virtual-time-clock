@@ -304,20 +304,20 @@ class TimeCorrectionService
             $type = strtoupper(trim((string) ($a['action_type'] ?? '')));
             $time = self::normalizeTime((string) ($a['action_time'] ?? ''));
             if (!in_array($type, self::TYPES, true)) {
-                throw new RuntimeException("Line $n: unknown action.");
+                throw new RuntimeException(t('Line {n}: unknown action.', ['n' => $n]));
             }
             if ($time === null) {
-                throw new RuntimeException("Line $n: enter a time as HH:MM.");
+                throw new RuntimeException(t('Line {n}: enter a time as HH:MM.', ['n' => $n]));
             }
             $t = TimeErrorService::toSeconds($time);
             if ($prev !== null && $t < $prev) {
-                throw new RuntimeException("Line $n: $time is earlier than the line before it.");
+                throw new RuntimeException(t('Line {n}: {time} is earlier than the line before it.', ['n' => $n, 'time' => $time]));
             }
             if ($date === $today && $t > TimeErrorService::toSeconds($now)) {
-                throw new RuntimeException("Line $n: $time is later than the current time.");
+                throw new RuntimeException(t('Line {n}: {time} is later than the current time.', ['n' => $n, 'time' => $time]));
             }
             if (!in_array($type, self::NEXT[$state], true)) {
-                throw new RuntimeException("Line $n: " . self::label($type) . ' is not possible here (' . self::stateLabel($state) . ').');
+                throw new RuntimeException(t('Line {n}: {action} is not possible here ({state}).', ['n' => $n, 'action' => self::label($type), 'state' => self::stateLabel($state)]));
             }
             $prev = $t;
 
@@ -401,21 +401,23 @@ class TimeCorrectionService
 
     public static function label(string $type): string
     {
-        return [
+        $labels = [
             'START_WORKDAY' => 'Clock in',
             'START_BREAK'   => 'Start break',
             'END_BREAK'     => 'End break',
             'END_WORKDAY'   => 'Clock out',
-        ][$type] ?? $type;
+        ];
+        return isset($labels[$type]) ? t($labels[$type]) : $type;
     }
 
     private static function stateLabel(string $state): string
     {
-        return [
+        $labels = [
             'NOT_STARTED' => 'the agent has not clocked in yet',
             'WORKING'     => 'the agent is working',
             'ON_BREAK'    => 'the agent is on break',
             'FINISHED'    => 'the agent has clocked out',
-        ][$state];
+        ];
+        return t($labels[$state]);
     }
 }

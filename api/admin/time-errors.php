@@ -26,41 +26,81 @@ if (!$isDate($from) || !$isDate($to) || $from > $to) {
 $summary = (new TimeErrorService())->summarize($from, $to, $search);
 
 if ($format === 'csv') {
-    header('Content-Type: text/csv; charset=utf-8');
+    require_once ROOT_PATH . '/src/Helpers/CsvExport.php';
     $name = $detail ? 'time_error_details' : 'time_errors_by_agent';
-    header('Content-Disposition: attachment; filename="' . $name . '_' . $from . '_' . $to . '.csv"');
-    $out = fopen('php://output', 'w');
+    $csv = new CsvExport($name . '_' . $from . '_' . $to . '.csv');
 
     if ($detail) {
-        fputcsv($out, ['User ID', 'Name', 'Username', 'Date', 'Error', 'Detail', 'Time impact (HH:MM:SS)']);
+        $csv->row(array_map('t', ['Agent', 'Username', 'Date', 'Error', 'Detail', 'Time impact']));
         foreach ($summary['agents'] as $a) {
             foreach ($a['incidents'] as $i) {
-                fputcsv($out, [
-                    $a['user_id'], $a['name'], $a['username'], $i['work_date'], $i['label'], $i['detail'],
-                    $i['impact_seconds'] === null ? '' : ($i['impact_seconds'] < 0 ? '-' : '') . TimeHelper::formatDuration(abs($i['impact_seconds'])),
+                $csv->row([
+                    $a['name'], $a['username'], $i['work_date'], $i['label'], $i['detail'],
+                    CsvExport::duration($i['impact_seconds'] === null ? null : (int) $i['impact_seconds']),
+                ]);
+            }
+            // Leave is not an error, but listed so the sheet shows why a day has no clock times.
+            foreach ($a['leave_days'] as $l) {
+                $csv->row([
+                    $a['name'], $a['username'], $l['work_date'],
+                    t('Leave:') . ' ' . $l['label'] . ' ' . ($l['paid'] ? t('(paid)') : t('(unpaid)')),
+                    $l['part_label'] . ($l['planned'] ? ', ' . t('planned') : '') . ($l['note'] !== '' ? '. ' . $l['note'] : ''),
+                    CsvExport::duration((int) $l['seconds']),
                 ]);
             }
         }
     } else {
-        $header = ['User ID', 'Name', 'Username', 'Days checked', 'Days with errors', 'Total errors'];
-        foreach ($summary['labels'] as $label) {
-            $header[] = $label;
-        }
-        $header = array_merge($header, ['Days that cannot be verified', 'Recorded work (h)', 'Real work from actions (h)', 'Difference (h)']);
-        fputcsv($out, $header);
-        foreach ($summary['agents'] as $a) {
-            $row = [$a['user_id'], $a['name'], $a['username'], $a['days_checked'], $a['days_with_errors'], $a['error_count']];
-            foreach (array_keys($summary['labels']) as $code) {
-                $row[] = $a['counts'][$code];
+        // Only the error types that happened in this period, so the sheet stays readable.
+        $codes = [];
+        foreach (array_keys($summary['labels']) as $code) {
+            foreach ($summary['agents'] as $a) {
+                if ($a['counts'][$code] > 0) {
+                    $codes[] = $code;
+                    break;
+                }
             }
+        }
+        $header = array_map('t', ['Agent', 'Username', 'Days checked', 'Days with errors', 'Total errors']);
+        foreach ($codes as $code) {
+            $header[] = $summary['labels'][$code];
+            $header[] = $summary['labels'][$code] . ' ' . t('(time)');
+        }
+        // Leave types taken in this period (days, a half day = 0.5, and hours)
+        $leaveCodes = [];
+        foreach (array_keys($summary['leave_labels']) as $type) {
+            foreach ($summary['agents'] as $a) {
+                if (($a['leave_counts'][$type] ?? 0) > 0) {
+                    $leaveCodes[] = $type;
+                    break;
+                }
+            }
+        }
+        foreach ($leaveCodes as $type) {
+            $header[] = $summary['leave_labels'][$type] . ' ' . t('(days)');
+            $header[] = $summary['leave_labels'][$type] . ' ' . t('(time)');
+        }
+        $header = array_merge($header, array_map('t', ['Paid leave (time)', 'Unpaid leave (time)', 'Days that cannot be verified', 'Recorded work', 'Real work from actions', 'Difference']));
+        $csv->row($header);
+        foreach ($summary['agents'] as $a) {
+            $row = [$a['name'], $a['username'], $a['days_checked'], $a['days_with_errors'], $a['error_count']];
+            foreach ($codes as $code) {
+                $row[] = $a['counts'][$code];
+                $row[] = $a['durations'][$code] ? CsvExport::duration((int) $a['durations'][$code]) : '';
+            }
+            foreach ($leaveCodes as $type) {
+                $row[] = $a['leave_counts'][$type] ?: '';
+                $row[] = $a['leave_seconds'][$type] ? CsvExport::duration((int) $a['leave_seconds'][$type]) : '';
+            }
+            $row[] = $a['paid_leave_seconds'] ? CsvExport::duration((int) $a['paid_leave_seconds']) : '';
+            $row[] = $a['unpaid_leave_seconds'] ? CsvExport::duration((int) $a['unpaid_leave_seconds']) : '';
             $row[] = $a['unverifiable_days'];
-            $row[] = round($a['recorded_work_seconds'] / 3600, 2);
-            $row[] = round($a['actual_work_seconds'] / 3600, 2);
-            $row[] = round($a['difference_seconds'] / 3600, 2);
-            fputcsv($out, $row);
+            $row[] = CsvExport::duration((int) $a['recorded_work_seconds']);
+            $row[] = CsvExport::duration((int) $a['actual_work_seconds']);
+            $row[] = CsvExport::duration((int) $a['difference_seconds']);
+            $csv->row($row);
         }
     }
-    fclose($out);
+    $csv->close();
     exit;
 }
 

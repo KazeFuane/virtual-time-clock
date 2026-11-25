@@ -14,7 +14,7 @@ $user = AuthMiddleware::requireAuth();
 try {
     $attendanceService = new AttendanceService();
     $result = $attendanceService->endBreak($user['id']);
-    Response::success('Break ended at ' . $result['time'] . '. Welcome back to work.', $result);
+    Response::success(t('Break ended at {time}. Welcome back to work.', ['time' => $result['time']]), $result);
 } catch (RuntimeException $e) {
     Response::error($e->getMessage(), 409);
 } catch (\Throwable $e) {

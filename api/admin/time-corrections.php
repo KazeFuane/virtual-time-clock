@@ -13,6 +13,8 @@
 require_once __DIR__ . '/../../src/bootstrap.php';
 require_once ROOT_PATH . '/src/Services/TimeErrorService.php';
 require_once ROOT_PATH . '/src/Services/TimeCorrectionService.php';
+require_once ROOT_PATH . '/src/Services/LeaveService.php';
+require_once ROOT_PATH . '/src/Services/ScheduleService.php';
 
 $caller = AdminMiddleware::requireManager();
 
@@ -59,8 +61,15 @@ try {
             $day['actions'] = TimeCorrectionService::deriveActions($day['day'], $day['breaks']);
             $day['derived'] = (bool) $day['actions'];
         }
+        // Planned shifts that day, and the ones expected after leave (for the
+        // default times and "Fill missing in/out")
+        $db = Database::getInstance()->getConnection();
+        $planned = ScheduleService::shiftsForReport($db, [$userId], $date, $date)[$userId][$date] ?? TimeErrorService::defaultShifts($date);
+        $leaveParts = LeaveService::expand(LeaveService::activeRows($db, $date, $date, $userId), $date, $date)[$userId][$date] ?? [];
         Response::success('Day loaded.', $day + [
-            'history' => $service->history($userId, $date),
+            'history'         => $service->history($userId, $date),
+            'planned_shifts'  => $planned,
+            'expected_shifts' => ScheduleService::withoutLeave($planned, $leaveParts),
         ]);
     }
 

@@ -103,7 +103,7 @@ class TimeErrorReportService
         $stmt->execute($params);
 
         return array_map(function ($r) {
-            $r['error_label'] = $r['error_code'] ? (TimeErrorService::LABELS[$r['error_code']] ?? $r['error_code']) : 'Other problem';
+            $r['error_label'] = $r['error_code'] ? TimeErrorService::label($r['error_code']) : t('Other problem');
             return $r;
         }, $stmt->fetchAll());
     }

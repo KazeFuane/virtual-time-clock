@@ -35,6 +35,9 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+// Translations: t() and the Lang class (see lang/ for the language files)
+require_once ROOT_PATH . '/src/Helpers/Lang.php';
+
 // Generate CSRF token if not present
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
@@ -50,6 +53,7 @@ spl_autoload_register(function (string $className): void {
         'AuthService'       => ROOT_PATH . '/src/Services/AuthService.php',
         'AttendanceService' => ROOT_PATH . '/src/Services/AttendanceService.php',
         'UserService'       => ROOT_PATH . '/src/Services/UserService.php',
+        'ScheduleService'   => ROOT_PATH . '/src/Services/ScheduleService.php',
 
         // Middleware
         'AuthMiddleware'    => ROOT_PATH . '/src/Middleware/AuthMiddleware.php',

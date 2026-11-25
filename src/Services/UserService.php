@@ -47,6 +47,61 @@ class UserService
     }
 
     /**
+     * Find people for the header search bar, by first name, last name,
+     * "first last", "last first", username, or user ID ("12" or "#12").
+     *
+     * Managers only see active employees (the agents they manage);
+     * administrators see every active account except their own.
+     * Employees never see anyone (returns an empty list).
+     */
+    public function searchPeople(array $caller, string $query, int $limit = 8): array
+    {
+        $role = $caller['role'] ?? 'employee';
+        $query = trim(preg_replace('/\s+/u', ' ', $query));
+        // A number (optionally written "#12") also matches that user ID
+        $id = preg_match('/^#?(\d{1,10})$/', $query, $m) ? (int) $m[1] : null;
+        if ($id !== null) {
+            $query = $m[1];
+        }
+        if (!in_array($role, ['administrator', 'manager'], true) || ($id === null && mb_strlen($query) < 2)) {
+            return [];
+        }
+
+        // Typed % and _ are matched literally, not as LIKE wildcards
+        $text = strtr($query, ['\\' => '\\\\', '%' => '\\%', '_' => '\\_']);
+        $like = '%' . $text . '%';
+        $starts = $text . '%';
+
+        $sql = "SELECT u.id, u.username, u.first_name, u.last_name, r.name AS role
+                FROM users u
+                JOIN roles r ON r.id = u.role_id
+                WHERE u.is_active = 1
+                  AND (u.username LIKE ? OR u.first_name LIKE ? OR u.last_name LIKE ?
+                       OR CONCAT(u.first_name, ' ', u.last_name) LIKE ?
+                       OR CONCAT(u.last_name, ' ', u.first_name) LIKE ?
+                       OR u.id = ?)";
+        $params = [$like, $like, $like, $like, $like, $id ?? 0];
+
+        if ($role === 'manager') {
+            $sql .= " AND r.name = 'employee'";
+        } else {
+            $sql .= " AND u.id <> ?";
+            $params[] = (int) $caller['id'];
+        }
+
+        // The exact ID first, then names that start with the text, then alphabetical
+        $sql .= " ORDER BY (u.id = ?) DESC,
+                           (u.first_name LIKE ? OR u.last_name LIKE ? OR u.username LIKE ?) DESC,
+                           u.last_name ASC, u.first_name ASC
+                  LIMIT " . max(1, min(20, $limit));
+        array_push($params, $id ?? 0, $starts, $starts, $starts);
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
      * Create a new user.
      */
     public function createUser(array $data): int

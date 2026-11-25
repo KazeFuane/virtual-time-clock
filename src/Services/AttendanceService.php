@@ -38,7 +38,7 @@ class AttendanceService
         $attendance = $stmt->fetch();
 
         if (!$attendance) {
-            $punctuality = TimeHelper::evaluateShiftPunctuality(null, $today, 'NOT_STARTED');
+            $punctuality = TimeHelper::evaluateShiftPunctuality(null, $today, 'NOT_STARTED', ScheduleService::shiftsOrDefault($userId, $today));
             return [
                 'status'              => 'NOT_STARTED',
                 'work_date'           => $today,
@@ -88,7 +88,7 @@ class AttendanceService
             $totalWorkSeconds = (int) $attendance['total_work_seconds'];
         }
 
-        $punctuality = TimeHelper::evaluateShiftPunctuality($attendance['start_time'], $attendance['work_date'], $attendance['status']);
+        $punctuality = TimeHelper::evaluateShiftPunctuality($attendance['start_time'], $attendance['work_date'], $attendance['status'], ScheduleService::shiftsOrDefault($userId, $attendance['work_date']));
 
         return [
             'id'                  => $attendance['id'],
@@ -236,7 +236,7 @@ class AttendanceService
         $maxBreakSeconds = BREAK_DURATION_MINUTES * 60; // 45 * 60 = 2700 seconds
         $usedBreakSeconds = (int) $current['total_break_seconds'];
         if ($usedBreakSeconds >= $maxBreakSeconds) {
-            throw new RuntimeException('You have reached the maximum daily break allowance of ' . BREAK_DURATION_MINUTES . ' minutes.');
+            throw new RuntimeException(t('You have reached the maximum daily break allowance of {n} minutes.', ['n' => BREAK_DURATION_MINUTES]));
         }
 
         // Calculate and store work seconds up to now
@@ -449,7 +449,7 @@ class AttendanceService
         $breakStmt->execute([$attendance['id']]);
         $breaks = $breakStmt->fetchAll();
 
-        $punctuality = TimeHelper::evaluateShiftPunctuality($attendance['start_time'], $attendance['work_date'], $attendance['status']);
+        $punctuality = TimeHelper::evaluateShiftPunctuality($attendance['start_time'], $attendance['work_date'], $attendance['status'], ScheduleService::shiftsOrDefault($userId, $attendance['work_date']));
 
         return [
             'id'                  => $attendance['id'],

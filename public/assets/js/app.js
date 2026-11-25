@@ -1,5 +1,15 @@
 // Shared App Utilities, CSRF handling, Notifications & Sidebar logic
 
+// Translation: t() is defined in the page head (Lang::jsScript()).
+// This fallback keeps English text if a page doesn't include it.
+if (typeof window.t !== 'function') {
+    window.t = function (s, p) {
+        let o = s;
+        if (p) { for (const k in p) { o = o.split('{' + k + '}').join(String(p[k])); } }
+        return o;
+    };
+}
+
 // Get CSRF Token
 function getCsrfToken() {
     return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
@@ -33,7 +43,7 @@ async function apiRequest(url, method = 'GET', data = null) {
             console.error('Non-JSON server response:', rawText);
             return {
                 success: false,
-                message: 'Server error (' + response.status + '). Please try again.'
+                message: t('Server error ({status}). Please try again.', { status: response.status })
             };
         }
         return json;
@@ -41,7 +51,7 @@ async function apiRequest(url, method = 'GET', data = null) {
         console.error('API Network/Fetch Error:', err);
         return {
             success: false,
-            message: 'Network communication error: ' + (err.message || 'Please check your connection.')
+            message: t('Network communication error: {msg}', { msg: err.message || t('Please check your connection.') })
         };
     }
 }
@@ -119,6 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (mobileToggle && sidebar) {
         mobileToggle.addEventListener('click', () => {
             sidebar.classList.toggle('-translate-x-full');
+            sidebar.classList.toggle('rtl:translate-x-full');
         });
     }
 });

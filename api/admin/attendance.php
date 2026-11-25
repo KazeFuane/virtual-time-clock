@@ -47,41 +47,70 @@ $stmt = $db->prepare($query);
 $stmt->execute($params);
 $records = $stmt->fetchAll();
 
+// Leave recorded for this date (see LeaveService)
+require_once ROOT_PATH . '/src/Services/TimeErrorService.php';
+require_once ROOT_PATH . '/src/Services/LeaveService.php';
+require_once ROOT_PATH . '/src/Services/ScheduleService.php';
+// Planned shifts of each agent that day (see ScheduleService)
+$plan = ScheduleService::shiftsForReport($db, array_column($records, 'user_id'), $date, $date);
+$plannedFor = fn(int $uid): array => $plan[$uid][$date] ?? TimeErrorService::defaultShifts($date);
+$leaveByUser = [];
+$leavePartsByUser = [];
+foreach (LeaveService::expand(LeaveService::activeRows($db, $date, $date), $date, $date) as $uid => $dates) {
+    if (!$plannedFor((int) $uid)) {
+        continue; // no shift planned that day: the leave takes nothing off
+    }
+    $leavePartsByUser[$uid] = $dates[$date] ?? [];
+    $parts = [];
+    foreach ($dates[$date] ?? [] as $part => $row) {
+        $parts[] = LeaveService::typeLabel($row['leave_type']) . ($part === 'FULL' ? '' : ' (' . mb_strtolower(LeaveService::partLabel($part)) . ')');
+    }
+    if ($parts) {
+        $leaveByUser[$uid] = implode(', ', $parts);
+    }
+}
+
 // Process records with Shift & Punctuality rules
 $processedRecords = [];
 foreach ($records as $r) {
-    $punctuality = TimeHelper::evaluateShiftPunctuality($r['start_time'], $date, $r['status']);
+    $planned = $plannedFor((int) $r['user_id']);
+    $expected = ScheduleService::withoutLeave($planned, $leavePartsByUser[(int) $r['user_id']] ?? []);
+    $r['planned_shifts'] = $planned;
+    $r['planned_label'] = ScheduleService::label($planned);
+    $punctuality = TimeHelper::evaluateShiftPunctuality($r['start_time'], $date, $r['status'], $expected);
     $r['punctuality'] = $punctuality;
+    $r['leave'] = $leaveByUser[(int) $r['user_id']] ?? null;
+    if ($r['leave'] !== null && ($r['status'] ?? 'NOT_STARTED') === 'NOT_STARTED') {
+        // Not clocked in because of recorded leave: not an absence
+        $r['punctuality'] = ['label' => t('On leave'), 'delay_text' => ''] + (array) $r['punctuality'];
+    }
     $processedRecords[] = $r;
 }
 
 // CSV export handler
 if ($format === 'csv') {
-    header('Content-Type: text/csv; charset=utf-8');
-    header('Content-Disposition: attachment; filename="attendance_' . $date . '.csv"');
-
-    $output = fopen('php://output', 'w');
-    fputcsv($output, ['User ID', 'Name', 'Username', 'Role', 'Date', 'Start Time', 'End Time', 'Work Hours', 'Break Hours', 'Punctuality', 'Delay', 'Status']);
+    require_once ROOT_PATH . '/src/Helpers/CsvExport.php';
+    $csv = new CsvExport('attendance_' . $date . '.csv');
+    $csv->row(array_map('t', ['Name', 'Username', 'Role', 'Date', 'Start time', 'End time', 'Work time', 'Break time', 'Planned shifts', 'Punctuality', 'Delay', 'Status', 'Leave']));
 
     foreach ($processedRecords as $r) {
-        $workedHours = round(($r['total_work_seconds'] ?? 0) / 3600, 2);
-        $breakHours  = round(($r['total_break_seconds'] ?? 0) / 3600, 2);
-        fputcsv($output, [
-            $r['user_id'],
-            $r['first_name'] . ' ' . $r['last_name'],
+        $csv->row([
+            trim($r['first_name'] . ' ' . $r['last_name']),
             $r['username'],
-            $r['role'],
+            ucfirst(t((string) $r['role'])),
             $date,
-            $r['start_time'] ?? 'N/A',
-            $r['end_time'] ?? 'N/A',
-            $workedHours,
-            $breakHours,
-            $r['punctuality']['label'] ?? 'N/A',
-            $r['punctuality']['delay_text'] ?? '00:00:00',
-            $r['status'] ?? 'NOT_STARTED'
+            $r['start_time'] ?? '',
+            $r['end_time'] ?? '',
+            CsvExport::duration((int) ($r['total_work_seconds'] ?? 0)),
+            CsvExport::duration((int) ($r['total_break_seconds'] ?? 0)),
+            $r['planned_label'],
+            t($r['punctuality']['label'] ?? ''),
+            $r['punctuality']['delay_text'] ?? '',
+            t(str_replace('_', ' ', $r['status'] ?? 'NOT_STARTED')),
+            $r['leave'] ?? '',
         ]);
     }
-    fclose($output);
+    $csv->close();
     exit;
 }
 

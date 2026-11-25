@@ -1,0 +1,27 @@
+/**
+ * ClockWise - right-to-left layout (Arabic and other RTL languages).
+ * Loaded only when the current language has 'dir' => 'rtl' (see lang/*.php).
+ * Most of the layout flips by itself because the pages use start/end classes
+ * (ms-, me-, ps-, pe-, text-start, text-end); this file handles the rest.
+ */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@300;400;500;600;700&display=swap');
+
+[dir="rtl"] body { font-family: 'Inter', 'Noto Sans Arabic', 'Segoe UI', Tahoma, sans-serif; }
+
+/* Times, durations, usernames and dates keep their left-to-right order
+   (otherwise "08:00-12:00 • 14:00-18:00" or "0.00 h" come out scrambled),
+   while staying aligned with the right-to-left page around them. */
+[dir="rtl"] .font-mono { direction: ltr; text-align: right; }
+[dir="rtl"] .text-center .font-mono,
+[dir="rtl"] .font-mono.text-center { text-align: center; }
+[dir="rtl"] .text-end .font-mono,
+[dir="rtl"] .font-mono.text-end { text-align: left; }
+[dir="rtl"] .font-mono.text-start { text-align: right; }
+[dir="rtl"] input[type="date"], [dir="rtl"] input[type="time"] { direction: ltr; text-align: right; }
+
+/* Arrows and chevrons point the other way. A chevron turned down to show an
+   open section (rotate-90) is left alone, so it still points down. */
+[dir="rtl"] .rtl-flip { display: inline-block; transform: scaleX(-1); }
+[dir="rtl"] svg:not(.rotate-90):has(> path[d="M9 5l7 7-7 7"]),
+[dir="rtl"] svg:has(> path[d="M15 19l-7-7 7-7"]),
+[dir="rtl"] svg:has(> path[d="M10 19l-7-7m0 0l7-7m-7 7h18"]) { transform: scaleX(-1); }

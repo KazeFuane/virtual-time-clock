@@ -1,10 +1,12 @@
+<?php require_once ROOT_PATH . '/src/Helpers/ThemeHelper.php'; ?>
 <!DOCTYPE html>
-<html lang="en" class="h-full bg-[#0d0914] text-gray-200">
+<html lang="<?= htmlspecialchars(Lang::current()) ?>" dir="<?= Lang::dir() ?>" class="h-full bg-[#0d0914] text-gray-200 <?= ThemeHelper::htmlClass() ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($pageTitle ?? APP_NAME) ?></title>
     <meta name="csrf-token" content="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
+    <?= Lang::jsScript() ?>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -49,10 +51,13 @@
         ::-webkit-scrollbar-thumb { background: #281d38; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #3b2a54; }
     </style>
+    <link rel="stylesheet" href="/virtual-time-clock/public/assets/css/theme-light.css">
+    <?php if (Lang::dir() === 'rtl'): ?><link rel="stylesheet" href="/virtual-time-clock/public/assets/css/rtl.css"><?php endif; ?>
+    <script src="/virtual-time-clock/public/assets/js/theme.js"></script>
 </head>
 <body class="h-full flex overflow-hidden antialiased">
     <!-- Toast notifications -->
-    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+    <div id="toast-container" class="fixed top-5 end-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
     <!-- Sidebar -->
     <?php include ROOT_PATH . '/views/partials/sidebar.php'; ?>

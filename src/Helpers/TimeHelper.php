@@ -68,134 +68,79 @@ class TimeHelper
     }
 
     /**
-     * Evaluate attendance punctuality for a given date and start time.
-     * Shifts:
-     * Shift 1: 08:00 - 12:00
-     * Shift 2: 14:00 - 18:00
+     * Evaluate attendance punctuality for a day from the agent's planned
+     * shifts ([['start' => 'HH:MM:SS', 'end' => 'HH:MM:SS'], ...], see
+     * ScheduleService). Without shifts given, the SHIFT_* settings apply
+     * Monday to Friday. A day with no planned shift is a day off.
      */
-    public static function evaluateShiftPunctuality(?string $startTime, string $workDate, ?string $status): array
+    public static function evaluateShiftPunctuality(?string $startTime, string $workDate, ?string $status, ?array $shifts = null): array
     {
         $today = self::currentDate();
         $now = self::currentTime();
         $isToday = ($workDate === $today);
         $isPastDate = ($workDate < $today);
 
-        // Case 1: Employee clocked in
-        if (!empty($startTime)) {
-            $clockTime = $startTime;
-            $shift1Start = SHIFT_1_START; // '08:00:00'
-            $shift2Start = SHIFT_2_START; // '14:00:00'
-
-            // Check if clocked in late for morning shift
-            // If they clocked in after 08:00:00 and before/around shift 2
-            if ($clockTime <= '13:00:00') {
-                if ($clockTime > $shift1Start) {
-                    $delaySeconds = self::secondsBetweenTimes($shift1Start, $clockTime);
-                    return [
-                        'punctuality'   => 'LATE',
-                        'label'         => 'Late Arrival',
-                        'delay_seconds' => $delaySeconds,
-                        'delay_text'    => self::formatDuration($delaySeconds),
-                        'shift_name'    => 'Morning (08:00 - 12:00)',
-                        'expected_time' => $shift1Start,
-                        'is_late'       => true,
-                        'is_absent'     => false
-                    ];
-                } else {
-                    return [
-                        'punctuality'   => 'ON_TIME',
-                        'label'         => 'On Time',
-                        'delay_seconds' => 0,
-                        'delay_text'    => '00:00:00',
-                        'shift_name'    => 'Morning (08:00 - 12:00)',
-                        'expected_time' => $shift1Start,
-                        'is_late'       => false,
-                        'is_absent'     => false
-                    ];
-                }
-            } else {
-                // Afternoon shift
-                if ($clockTime > $shift2Start) {
-                    $delaySeconds = self::secondsBetweenTimes($shift2Start, $clockTime);
-                    return [
-                        'punctuality'   => 'LATE',
-                        'label'         => 'Late Arrival',
-                        'delay_seconds' => $delaySeconds,
-                        'delay_text'    => self::formatDuration($delaySeconds),
-                        'shift_name'    => 'Afternoon (14:00 - 18:00)',
-                        'expected_time' => $shift2Start,
-                        'is_late'       => true,
-                        'is_absent'     => false
-                    ];
-                } else {
-                    return [
-                        'punctuality'   => 'ON_TIME',
-                        'label'         => 'On Time',
-                        'delay_seconds' => 0,
-                        'delay_text'    => '00:00:00',
-                        'shift_name'    => 'Afternoon (14:00 - 18:00)',
-                        'expected_time' => $shift2Start,
-                        'is_late'       => false,
-                        'is_absent'     => false
-                    ];
+        if ($shifts === null) {
+            $day = (int) (new DateTime($workDate))->format('N');
+            $shifts = $day <= 5
+                ? [['start' => SHIFT_1_START, 'end' => SHIFT_1_END], ['start' => SHIFT_2_START, 'end' => SHIFT_2_END]]
+                : [];
+        }
+        $hm = fn($t) => substr((string) $t, 0, 5);
+        $name = fn(array $sh) => $hm($sh['start']) . ' - ' . $hm($sh['end']);
+        $all = implode(', ', array_map(fn($sh) => $hm($sh['start']) . '-' . $hm($sh['end']), $shifts));
+        $result = fn(string $code, string $label, int $delay, string $delayText, string $shiftName, ?string $expected, bool $late, bool $absent) => [
+            'punctuality'   => $code,
+            'label'         => $label,
+            'delay_seconds' => $delay,
+            'delay_text'    => $delayText,
+            'shift_name'    => $shiftName,
+            'expected_time' => $expected,
+            'is_late'       => $late,
+            'is_absent'     => $absent,
+            'shifts'        => $shifts,
+        ];
+        // The shift a time belongs to: the first shift not over yet at that time
+        $shiftAt = function (string $t) use ($shifts) {
+            foreach ($shifts as $sh) {
+                if ($t < $sh['end']) {
+                    return $sh;
                 }
             }
+            return null;
+        };
+
+        // No shift planned
+        if (!$shifts) {
+            return $result('DAY_OFF', empty($startTime) ? 'Day off' : 'Worked on a day off', 0, '--', 'No shift planned', null, false, false);
         }
 
-        // Case 2: Employee did NOT clock in
-        // If it's a past day, it is definitely an Absence.
-        if ($isPastDate) {
-            return [
-                'punctuality'   => 'ABSENT',
-                'label'         => 'Absent',
-                'delay_seconds' => 0,
-                'delay_text'    => 'Full Day',
-                'shift_name'    => 'Both Shifts (08:00-12:00, 14:00-18:00)',
-                'expected_time' => SHIFT_1_START,
-                'is_late'       => false,
-                'is_absent'     => true
-            ];
+        // Case 1: clocked in
+        if (!empty($startTime)) {
+            $sh = $shiftAt($startTime) ?? end($shifts);
+            if ($startTime > $sh['start']) {
+                $delay = self::secondsBetweenTimes($sh['start'], $startTime);
+                if ($delay > LATE_TOLERANCE_SECONDS) {
+                    return $result('LATE', 'Late Arrival', $delay, self::formatDuration($delay), $name($sh), $sh['start'], true, false);
+                }
+            }
+            return $result('ON_TIME', 'On Time', 0, '00:00:00', $name($sh), $sh['start'], false, false);
         }
 
-        // If it is today and current time has passed the end of the workday (18:00:00), they are absent
-        if ($isToday && $now >= SHIFT_2_END) {
-            return [
-                'punctuality'   => 'ABSENT',
-                'label'         => 'Absent',
-                'delay_seconds' => 0,
-                'delay_text'    => 'Full Day',
-                'shift_name'    => 'Both Shifts',
-                'expected_time' => SHIFT_1_START,
-                'is_late'       => false,
-                'is_absent'     => true
-            ];
+        // Case 2: did not clock in
+        $last = end($shifts);
+        if ($isPastDate || ($isToday && $now >= $last['end'])) {
+            return $result('ABSENT', 'Absent', 0, 'Full Day', $all, $shifts[0]['start'], false, true);
         }
-
-        // If it is today and current time is past morning start (08:00:00) but hasn't logged in yet
-        if ($isToday && $now > SHIFT_1_START) {
-            $delaySeconds = self::secondsBetweenTimes(SHIFT_1_START, $now);
-            return [
-                'punctuality'   => 'DELAYED_NOT_IN',
-                'label'         => 'Delayed (Not In Yet)',
-                'delay_seconds' => $delaySeconds,
-                'delay_text'    => self::formatDuration($delaySeconds),
-                'shift_name'    => ($now < SHIFT_2_START) ? 'Morning (08:00 - 12:00)' : 'Afternoon (14:00 - 18:00)',
-                'expected_time' => ($now < SHIFT_2_START) ? SHIFT_1_START : SHIFT_2_START,
-                'is_late'       => true,
-                'is_absent'     => false
-            ];
+        if ($isToday && $now > $shifts[0]['start']) {
+            $sh = $shiftAt($now) ?? $last;
+            if ($now > $sh['start']) {
+                $delay = self::secondsBetweenTimes($sh['start'], $now);
+                return $result('DELAYED_NOT_IN', 'Delayed (Not In Yet)', $delay, self::formatDuration($delay), $name($sh), $sh['start'], true, false);
+            }
+            // Between two shifts, the next one has not started yet
+            return $result('UPCOMING', 'Shift Upcoming', 0, '--', $name($sh), $sh['start'], false, false);
         }
-
-        // Before 08:00:00 today
-        return [
-            'punctuality'   => 'UPCOMING',
-            'label'         => 'Shift Upcoming',
-            'delay_seconds' => 0,
-            'delay_text'    => '--',
-            'shift_name'    => 'Morning (08:00 - 12:00)',
-            'expected_time' => SHIFT_1_START,
-            'is_late'       => false,
-            'is_absent'     => false
-        ];
+        return $result('UPCOMING', 'Shift Upcoming', 0, '--', $name($shifts[0]), $shifts[0]['start'], false, false);
     }
 }

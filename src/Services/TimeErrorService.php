@@ -23,11 +23,28 @@
  *   LONG_SHIFT            Real work time over LONG_SHIFT_SECONDS (GUESS: 12h).
  *   SHORT_SHIFT           Finished day with real work under
  *                         SHORT_SHIFT_SECONDS (GUESS: 15 min).
- *   LATE_ARRIVAL          Clock-in after the shift start (SHIFT_1_START, or
- *                         SHIFT_2_START when clocking in after 13:00).
- *   EARLY_DEPARTURE       Last clock-out before SHIFT_2_END.
- *   ABSENCE               Past weekday (Mon-Fri, GUESS) with no clock-in,
- *                         counted only from the day after the account was created.
+ *   LATE_ARRIVAL          First clock-in after the start of the planned shift
+ *                         it falls in (the first planned shift that has not
+ *                         ended yet at the clock-in time).
+ *   EARLY_DEPARTURE       Last clock-out before the end of the last planned
+ *                         shift of the day.
+ *   ABSENCE               Planned shift with no work, counted per shift once
+ *                         the shift has ended (today included): no clock-in =
+ *                         every planned shift, first clock-in at/after a
+ *                         shift's end = that shift. Only from the day after
+ *                         the account was created. Shifts covered by a
+ *                         recorded leave are not absences.
+ *   WORKED_ON_LEAVE       Clocked in on a day recorded as full-day leave.
+ *
+ * Leave / PTO (see LeaveService) is not an error. Each working day of leave
+ * is listed per agent under 'leave_days', with hours from the agent's
+ * schedule, and summed by type in 'leave_counts' / 'leave_seconds'.
+ * On a half-day leave the late/early checks use the shift that is worked.
+ *
+ * Planned shifts come from ScheduleService (each agent's schedule, day
+ * changes, or the default schedule). A day with no planned shift is not a
+ * working day: no absence, lateness or early departure is counted on it.
+ * Without a plan (tests), the SHIFT_* settings apply Monday to Friday.
  *
  * Only active accounts with the employee role are checked. Managers and
  * administrators are not required to clock in, so they are left out.
@@ -35,6 +52,9 @@
  * Every incident carries impact_seconds when a duration makes sense; the
  * per-agent 'durations' array sums them by error code.
  */
+
+require_once __DIR__ . '/LeaveService.php';
+require_once __DIR__ . '/ScheduleService.php';
 
 class TimeErrorService
 {
@@ -57,9 +77,22 @@ class TimeErrorService
         'TOTAL_MISMATCH'       => 'Stored total does not match times',
         'LONG_SHIFT'           => 'Unusually long shift',
         'SHORT_SHIFT'          => 'Unusually short shift',
+        'WORKED_ON_LEAVE'      => 'Clocked in on a leave day',
     ];
 
     private ?PDO $db;
+
+    /** All error labels in the user's language (code => label). */
+    public static function labels(): array
+    {
+        return array_map(fn($l) => t($l), self::LABELS);
+    }
+
+    /** One error label in the user's language. */
+    public static function label(string $code): string
+    {
+        return isset(self::LABELS[$code]) ? t(self::LABELS[$code]) : $code;
+    }
 
     public function __construct(?PDO $db = null)
     {
@@ -117,7 +150,10 @@ class TimeErrorService
             }
         }
 
-        return $this->buildSummary($users, $days, $actions, $breaks, TimeHelper::currentDate(), $from, $to);
+        $leave = LeaveService::expand(LeaveService::activeRows($db, $from, $to, $userId), $from, $to);
+        $plan = ScheduleService::shiftsForReport($db, array_column($users, 'id'), $from, $to);
+
+        return $this->buildSummary($users, $days, $actions, $breaks, TimeHelper::currentDate(), $from, $to, null, $leave, $plan);
     }
 
     /**
@@ -127,9 +163,14 @@ class TimeErrorService
      * @param array $days    attendance_days rows
      * @param array $actions attendance_day_id => time_actions rows (in insert order)
      * @param array $breaks  attendance_day_id => breaks rows
+     * @param array $leave   LeaveService::expand() result: user_id => date => part => leave row
+     * @param ?array $plan   user_id => date => planned shifts [['start','end'], ...]
+     *                       (ScheduleService::shiftsForReport). Missing = SHIFT_* Mon-Fri.
      */
-    public function buildSummary(array $users, array $days, array $actions, array $breaks, string $today, string $from, string $to): array
+    public function buildSummary(array $users, array $days, array $actions, array $breaks, string $today, string $from, string $to, ?string $now = null, array $leave = [], ?array $plan = null): array
     {
+        $planned = fn($uid, string $date): array => $plan[$uid][$date] ?? self::defaultShifts($date);
+        $leaveTypes = array_keys(LeaveService::TYPES);
         $byUser = [];
         foreach ($users as $u) {
             $byUser[$u['id']] = [
@@ -148,6 +189,12 @@ class TimeErrorService
                 'difference_seconds'    => 0,   // recorded - actual; > 0 means the app counted extra time
                 'unverifiable_days'     => 0,   // days whose real hours cannot be known (missing logout/login)
                 'incidents'             => [],
+                // Leave is not an error: kept apart from counts/error_count
+                'leave_counts'          => array_fill_keys($leaveTypes, 0),   // days (a half day = 0.5)
+                'leave_seconds'         => array_fill_keys($leaveTypes, 0),
+                'paid_leave_seconds'    => 0,
+                'unpaid_leave_seconds'  => 0,
+                'leave_days'            => [],
             ];
         }
 
@@ -156,7 +203,7 @@ class TimeErrorService
             if (!isset($byUser[$uid])) {
                 continue; // inactive or filtered out
             }
-            $result = $this->checkDay($day, $actions[$day['id']] ?? [], $breaks[$day['id']] ?? [], $today);
+            $result = $this->checkDay($day, $actions[$day['id']] ?? [], $breaks[$day['id']] ?? [], $today, $leave[$uid][$day['work_date']] ?? [], $planned($uid, $day['work_date']));
             if ($result === null) {
                 continue; // nothing to check (today, still in progress)
             }
@@ -182,42 +229,132 @@ class TimeErrorService
             unset($s);
         }
 
-        // Absences: past weekdays in the range with no clock-in (employees only)
-        $worked = [];
+        // Absences, per planned shift (employees only). A shift counts once it
+        // has ended: every shift of a past day, and today's shifts after their
+        // end time. No clock-in at all = every planned shift; a first clock-in
+        // at or after the end of a shift = that shift missed. Shifts on leave
+        // are not expected.
+        $now = $now ?? TimeHelper::currentTime();
+        $firstIn = [];
         foreach ($days as $day) {
             if (!empty($day['start_time'])) {
-                $worked[$day['user_id']][$day['work_date']] = true;
+                $firstIn[$day['user_id']][$day['work_date']] = $day['start_time'];
             }
         }
-        $shiftSeconds = (self::toSeconds(SHIFT_1_END) - self::toSeconds(SHIFT_1_START))
-                      + (self::toSeconds(SHIFT_2_END) - self::toSeconds(SHIFT_2_START));
+        $hm = fn($t) => substr($t, 0, 5);
+        $span = fn(array $sh) => $hm($sh['start']) . '-' . $hm($sh['end']);
         foreach ($byUser as $uid => &$s) {
             if (($s['role'] ?? 'employee') !== 'employee') {
                 continue;
             }
-            for ($d = new DateTime($from); $d->format('Y-m-d') <= $to && $d->format('Y-m-d') < $today; $d->modify('+1 day')) {
+            for ($d = new DateTime($from); $d->format('Y-m-d') <= $to && $d->format('Y-m-d') <= $today; $d->modify('+1 day')) {
                 $date = $d->format('Y-m-d');
                 // Not absent before the account existed, nor on the day it was
                 // created (the account may have been made after the shift started)
                 if ($s['created_on'] !== null && $date <= $s['created_on']) {
                     continue;
                 }
-                if ((int) $d->format('N') >= 6 || isset($worked[$uid][$date])) {
+                $shifts = $planned($uid, $date);
+                if (!$shifts) {
+                    continue; // nothing planned: not a working day
+                }
+                $off = $leave[$uid][$date] ?? [];
+                $expected = ScheduleService::withoutLeave($shifts, $off);
+                $isPast = $date < $today;
+                $in = $firstIn[$uid][$date] ?? null;
+
+                // Name a shift: with two shifts a day, "morning"/"afternoon"
+                // (like leave parts); otherwise by its hours.
+                $name = fn(array $sh) => count($shifts) === 2
+                    ? ($sh === $shifts[0]
+                        ? t('morning shift ({hours})', ['hours' => $span($sh)])
+                        : t('afternoon shift ({hours})', ['hours' => $span($sh)]))
+                    : t('shift {hours}', ['hours' => $span($sh)]);
+                $missed = [];
+                foreach ($expected as $sh) {
+                    $ended = $isPast || self::toSeconds($now) >= self::toSeconds($sh['end']);
+                    if ($ended && ($in === null || self::toSeconds($in) >= self::toSeconds($sh['end']))) {
+                        $missed[] = $sh;
+                    }
+                }
+                if (!$missed) {
                     continue;
                 }
+                $secs = ScheduleService::totalSeconds($missed);
+                $names = implode(' ' . t('and') . ' ', array_map($name, $missed));
+                $leaveShifts = array_values(array_filter($shifts, fn($sh) => !in_array($sh, $expected, true)));
+                $leaveNames = implode(' ' . t('and') . ' ', array_map($name, $leaveShifts));
+                $onLeave = $leaveShifts ? ' ' . (count($leaveShifts) > 1
+                    ? t('The {shifts} are on leave.', ['shifts' => $leaveNames])
+                    : t('The {shifts} is on leave.', ['shifts' => $leaveNames])) : '';
+                if ($in === null && count($missed) === count($shifts)) {
+                    $detail = t('No clock-in on this working day (planned {shifts}).', ['shifts' => ScheduleService::label($shifts)]);
+                } elseif ($in === null) {
+                    $detail = t('No clock-in for the {shifts}.', ['shifts' => $names]) . $onLeave;
+                } else {
+                    $detail = t('Missed the {shifts}; first clock-in at {time}.', ['shifts' => $names, 'time' => $hm($in)]) . $onLeave;
+                }
+
+                $hadErrors = false;
+                foreach ($s['incidents'] as $i) {
+                    if ($i['work_date'] === $date) {
+                        $hadErrors = true;
+                        break;
+                    }
+                }
                 $s['error_count']++;
-                $s['days_with_errors']++;
+                if (!$hadErrors) {
+                    $s['days_with_errors']++;
+                }
                 $s['counts']['ABSENCE']++;
-                $s['durations']['ABSENCE'] += $shiftSeconds;
+                $s['durations']['ABSENCE'] += $secs;
                 $s['incidents'][] = [
                     'work_date'      => $date,
                     'code'           => 'ABSENCE',
-                    'label'          => self::LABELS['ABSENCE'],
-                    'detail'         => 'No clock-in on this working day.',
-                    'impact_seconds' => $shiftSeconds,
+                    'label'          => self::label('ABSENCE'),
+                    'detail'         => $detail,
+                    'impact_seconds' => $secs,
                 ];
             }
             usort($s['incidents'], fn($a, $b) => strcmp($a['work_date'], $b['work_date']));
+        }
+        unset($s);
+
+        // Leave days (every planned working day in the period, future days included)
+        foreach ($byUser as $uid => &$s) {
+            foreach ($leave[$uid] ?? [] as $date => $parts) {
+                if ($date < $from || $date > $to) {
+                    continue;
+                }
+                $shifts = $planned($uid, $date);
+                if (!$shifts) {
+                    continue; // no shift planned that day: nothing taken off
+                }
+                foreach ($parts as $part => $row) {
+                    $type = $row['leave_type'];
+                    $secs = ScheduleService::leaveSeconds($shifts, $part);
+                    if ($secs === 0) {
+                        continue; // e.g. afternoon leave on a day with one shift
+                    }
+                    $paid = LeaveService::isPaid($type);
+                    $s['leave_counts'][$type] = ($s['leave_counts'][$type] ?? 0) + ($part === 'FULL' ? 1 : 0.5);
+                    $s['leave_seconds'][$type] = ($s['leave_seconds'][$type] ?? 0) + $secs;
+                    $s[$paid ? 'paid_leave_seconds' : 'unpaid_leave_seconds'] += $secs;
+                    $s['leave_days'][] = [
+                        'work_date'  => $date,
+                        'leave_id'   => (int) $row['id'],
+                        'type'       => $type,
+                        'label'      => LeaveService::typeLabel($type),
+                        'part'       => $part,
+                        'part_label' => LeaveService::partLabel($part),
+                        'paid'       => $paid,
+                        'seconds'    => $secs,
+                        'planned'    => $date > $today,
+                        'note'       => (string) ($row['note'] ?? ''),
+                    ];
+                }
+            }
+            usort($s['leave_days'], fn($a, $b) => [$a['work_date'], $a['part']] <=> [$b['work_date'], $b['part']]);
         }
         unset($s);
 
@@ -231,10 +368,19 @@ class TimeErrorService
             }
         }
 
+        $leaveTotals = array_fill_keys($leaveTypes, 0);
+        foreach ($agents as $a) {
+            foreach ($a['leave_seconds'] as $type => $secs) {
+                $leaveTotals[$type] = ($leaveTotals[$type] ?? 0) + $secs;
+            }
+        }
+
         return [
             'from'       => $from,
             'to'         => $to,
-            'labels'     => self::LABELS,
+            'labels'     => self::labels(),
+            'leave_labels' => array_map(fn($t) => $t['label'], LeaveService::types()),
+            'leave_totals' => $leaveTotals,
             'totals'     => $totals,
             'agents'     => $agents,
             'thresholds' => [
@@ -249,8 +395,12 @@ class TimeErrorService
     /**
      * Check one attendance day. Returns null when the day is still in progress.
      */
-    public function checkDay(array $day, array $actions, array $breaks, string $today): ?array
+    public function checkDay(array $day, array $actions, array $breaks, string $today, array $leaveParts = [], ?array $planned = null): ?array
     {
+        $planned  = $planned ?? self::defaultShifts($day['work_date']);
+        // Shifts the agent was expected to work (planned, minus leave)
+        $expectedShifts = ScheduleService::withoutLeave($planned, $leaveParts);
+        $lastPlannedEnd = $expectedShifts ? end($expectedShifts)['end'] : ($planned ? end($planned)['end'] : SHIFT_2_END);
         $isPast = $day['work_date'] < $today;
         $status = $day['status'];
         if (!$isPast && $status !== 'FINISHED') {
@@ -261,7 +411,7 @@ class TimeErrorService
         $add = function (string $code, string $detail, ?int $impact = null) use (&$errors) {
             $errors[] = [
                 'code'           => $code,
-                'label'          => self::LABELS[$code],
+                'label'          => self::label($code),
                 'detail'         => $detail,
                 'impact_seconds' => $impact,
             ];
@@ -274,28 +424,31 @@ class TimeErrorService
 
         // --- Missing login
         if ($starts === 0 && ($actions || $status !== 'NOT_STARTED')) {
-            $add('MISSING_LOGIN', 'Day has status ' . $status . ' and ' . count($actions) . ' action(s) but no clock-in.');
+            $add('MISSING_LOGIN', t('Day has status {status} and {n} action(s) but no clock-in.', ['status' => $status, 'n' => count($actions)]));
             $verifiable = false;
         } elseif (empty($day['start_time']) && $status !== 'NOT_STARTED') {
-            $add('MISSING_LOGIN', 'Clock-in action exists but the day has no start time.');
+            $add('MISSING_LOGIN', t('Clock-in action exists but the day has no start time.'));
             $verifiable = false;
         }
 
         // --- Missing logout
         if ($isPast && in_array($status, ['WORKING', 'ON_BREAK'], true)) {
             $last = end($actions);
-            $open = $last ? max(0, self::toSeconds(SHIFT_2_END) - self::toSeconds($last['action_time'])) : 0;
-            $add('MISSING_LOGOUT', 'Day was left ' . $status . ($last ? ' (last action ' . $last['action_type'] . ' at ' . $last['action_time'] . ')' : '') . '. Duration shown is from the last action to ' . substr(SHIFT_2_END, 0, 5) . '.', $open ?: null);
+            $dayEnd = $lastPlannedEnd;
+            $open = $last ? max(0, self::toSeconds($dayEnd) - self::toSeconds($last['action_time'])) : 0;
+            $add('MISSING_LOGOUT', t('Day was left {status}', ['status' => $status])
+                . ($last ? ' (' . t('last action {action} at {time}', ['action' => $last['action_type'], 'time' => $last['action_time']]) . ')' : '')
+                . '. ' . t('Duration shown is from the last action to {time}.', ['time' => substr($dayEnd, 0, 5)]), $open ?: null);
             $verifiable = false;
         } elseif ($status === 'FINISHED' && !$hasEnd) {
-            $add('MISSING_LOGOUT', 'Day is marked FINISHED but has no clock-out action.');
+            $add('MISSING_LOGOUT', t('Day is marked FINISHED but has no clock-out action.'));
             $verifiable = false;
         }
 
         // --- Open breaks
         foreach ($breaks as $b) {
             if (empty($b['end_time']) && ($isPast || $status === 'FINISHED')) {
-                $add('OPEN_BREAK', 'Break started at ' . $b['start_time'] . ' was never ended.');
+                $add('OPEN_BREAK', t('Break started at {time} was never ended.', ['time' => $b['start_time']]));
             }
         }
 
@@ -305,7 +458,19 @@ class TimeErrorService
             $add('OUT_OF_ORDER', $p);
         }
         foreach ($reloginGaps as [$out, $in, $gap]) {
-            $add('RELOGIN_AFTER_LOGOUT', "Logged out at $out and back in at $in (" . TimeHelper::formatDuration($gap) . ' logged out).', $gap);
+            // Clocking out at the end of one planned shift and back in for the
+            // next one is the normal schedule, not an error.
+            $between = false;
+            for ($i = 1; $i < count($planned); $i++) {
+                if (self::toSeconds($out) >= self::toSeconds($planned[$i - 1]['end']) && self::toSeconds($in) <= self::toSeconds($planned[$i]['start'])) {
+                    $between = true;
+                    break;
+                }
+            }
+            if ($between) {
+                continue;
+            }
+            $add('RELOGIN_AFTER_LOGOUT', t('Logged out at {out} and back in at {in} ({duration} logged out).', ['out' => $out, 'in' => $in, 'duration' => TimeHelper::formatDuration($gap)]), $gap);
         }
         if ($orderProblems) {
             $verifiable = false;
@@ -318,7 +483,7 @@ class TimeErrorService
             if (!empty($b['end_time'])) {
                 $len = self::toSeconds($b['end_time']) - self::toSeconds($b['start_time']);
                 if ($len < 0) {
-                    $add('OUT_OF_ORDER', 'Break ends (' . $b['end_time'] . ') before it starts (' . $b['start_time'] . ').');
+                    $add('OUT_OF_ORDER', t('Break ends ({end}) before it starts ({start}).', ['end' => $b['end_time'], 'start' => $b['start_time']]));
                     $verifiable = false;
                 } else {
                     $realBreak += $len;
@@ -326,16 +491,16 @@ class TimeErrorService
             }
         }
         if (count($breaks) > MAX_BREAKS_PER_DAY) {
-            $add('EXTRA_BREAKS', count($breaks) . ' breaks taken, policy allows ' . MAX_BREAKS_PER_DAY . '.');
+            $add('EXTRA_BREAKS', t('{n} breaks taken, policy allows {max}.', ['n' => count($breaks), 'max' => MAX_BREAKS_PER_DAY]));
         }
         if ($realBreak > $allowance + self::BREAK_GRACE_SECONDS) {
             $excess = $realBreak - $allowance;
-            $add('BREAK_OVER_LIMIT', 'Real break time ' . TimeHelper::formatDuration($realBreak) . ', allowance ' . TimeHelper::formatDuration($allowance) . '. Over by ' . TimeHelper::formatDuration($excess) . '.', $excess);
+            $add('BREAK_OVER_LIMIT', t('Real break time {real}, allowance {allowed}. Over by {over}.', ['real' => TimeHelper::formatDuration($realBreak), 'allowed' => TimeHelper::formatDuration($allowance), 'over' => TimeHelper::formatDuration($excess)]), $excess);
         }
 
         // --- End before start on the day itself
         if (!empty($day['start_time']) && !empty($day['end_time']) && self::toSeconds($day['end_time']) < self::toSeconds($day['start_time'])) {
-            $add('OUT_OF_ORDER', 'Clock-out (' . $day['end_time'] . ') is earlier than clock-in (' . $day['start_time'] . ').');
+            $add('OUT_OF_ORDER', t('Clock-out ({out}) is earlier than clock-in ({in}).', ['out' => $day['end_time'], 'in' => $day['start_time']]));
             $verifiable = false;
         }
 
@@ -345,40 +510,56 @@ class TimeErrorService
         if ($status === 'FINISHED' && $starts === 1 && !empty($day['start_time']) && !empty($day['end_time'])) {
             $expected = max(0, self::toSeconds($day['end_time']) - self::toSeconds($day['start_time']) - (int) $day['total_break_seconds']);
             if (abs($expected - $recorded) > self::MISMATCH_TOLERANCE) {
-                $add('TOTAL_MISMATCH', 'Stored work total ' . TimeHelper::formatDuration($recorded) . ' but start/end/break give ' . TimeHelper::formatDuration($expected) . '.', $recorded - $expected);
+                $add('TOTAL_MISMATCH', t('Stored work total {stored} but start/end/break give {expected}.', ['stored' => TimeHelper::formatDuration($recorded), 'expected' => TimeHelper::formatDuration($expected)]), $recorded - $expected);
             }
         }
 
+        // --- Leave: full day off but clocked in; half day changes the expected times
+        $fullLeave = isset($leaveParts['FULL']);
+        if ($fullLeave && $starts > 0) {
+            $row = $leaveParts['FULL'];
+            $add('WORKED_ON_LEAVE', t('Day is recorded as {leave} (full day) but the agent clocked in at {time}. Cancel the leave or correct the times.', ['leave' => mb_strtolower(LeaveService::typeLabel($row['leave_type'])), 'time' => $day['start_time'] ?? '?']), $actual ?: null);
+        }
+
         // --- Late arrival (first clock-in)
-        if (!empty($day['start_time'])) {
+        // The shift the clock-in belongs to is the first expected shift that
+        // has not ended yet at that time.
+        if (!$fullLeave && $expectedShifts && !empty($day['start_time'])) {
             $in = self::toSeconds($day['start_time']);
-            $expected = $in <= self::toSeconds('13:00:00') ? SHIFT_1_START : SHIFT_2_START;
-            $delay = $in - self::toSeconds($expected);
+            $shiftStart = null;
+            foreach ($expectedShifts as $sh) {
+                if ($in < self::toSeconds($sh['end'])) {
+                    $shiftStart = $sh['start'];
+                    break;
+                }
+            }
+            $delay = $shiftStart === null ? 0 : $in - self::toSeconds($shiftStart);
             if ($delay > LATE_TOLERANCE_SECONDS) {
-                $add('LATE_ARRIVAL', 'Clocked in at ' . $day['start_time'] . ', shift starts at ' . $expected . '.', $delay);
+                $add('LATE_ARRIVAL', t('Clocked in at {in}, shift starts at {start}.', ['in' => $day['start_time'], 'start' => $shiftStart]), $delay);
             }
         }
 
         // --- Early departure (last clock-out)
-        if ($status === 'FINISHED' && $hasEnd) {
+        if (!$fullLeave && $expectedShifts && $status === 'FINISHED' && $hasEnd) {
             $lastOut = null;
             foreach ($actions as $a) {
                 if ($a['action_type'] === 'END_WORKDAY') {
                     $lastOut = $a['action_time'];
                 }
             }
-            $early = self::toSeconds(SHIFT_2_END) - self::toSeconds($lastOut);
+            $shiftEnd = $lastPlannedEnd;
+            $early = self::toSeconds($shiftEnd) - self::toSeconds($lastOut);
             if ($early > 0) {
-                $add('EARLY_DEPARTURE', 'Clocked out at ' . $lastOut . ', shift ends at ' . SHIFT_2_END . '.', $early);
+                $add('EARLY_DEPARTURE', t('Clocked out at {out}, shift ends at {end}.', ['out' => $lastOut, 'end' => $shiftEnd]), $early);
             }
         }
 
         // --- Plausibility of real work time
         if ($verifiable && $status === 'FINISHED') {
             if ($actual > self::LONG_SHIFT_SECONDS) {
-                $add('LONG_SHIFT', 'Real work time ' . TimeHelper::formatDuration($actual) . '.');
+                $add('LONG_SHIFT', t('Real work time {time}.', ['time' => TimeHelper::formatDuration($actual)]));
             } elseif ($actual < self::SHORT_SHIFT_SECONDS) {
-                $add('SHORT_SHIFT', 'Real work time ' . TimeHelper::formatDuration($actual) . '.');
+                $add('SHORT_SHIFT', t('Real work time {time}.', ['time' => TimeHelper::formatDuration($actual)]));
             }
         }
 
@@ -415,12 +596,12 @@ class TimeErrorService
             $t    = self::toSeconds($a['action_time']);
 
             if ($prevTime !== null && $t < $prevTime) {
-                $problems[] = "$type at {$a['action_time']} is earlier than the action before it.";
+                $problems[] = t('{action} at {time} is earlier than the action before it.', ['action' => $type, 'time' => $a['action_time']]);
             }
             $prevTime = $t;
 
             if (!in_array($type, $allowed[$state], true)) {
-                $problems[] = "$type at {$a['action_time']} while the agent was " . $state . '.';
+                $problems[] = t('{action} at {time} while the agent was {state}.', ['action' => $type, 'time' => $a['action_time'], 'state' => $state]);
                 continue;
             }
 
@@ -449,6 +630,12 @@ class TimeErrorService
         }
 
         return [$work, $problems, $gaps];
+    }
+
+    /** Shifts from the SHIFT_* settings, Monday to Friday (used when no plan is given). */
+    public static function defaultShifts(string $date): array
+    {
+        return ScheduleService::shiftsOfWeek(ScheduleService::configWeek(), $date);
     }
 
     public static function toSeconds(string $time): int

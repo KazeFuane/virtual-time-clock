@@ -107,7 +107,7 @@ if ($method === 'GET') {
         if (isset($input[$field])) {
             $value = trim((string) $input[$field]);
             if ($value === '') {
-                Response::error("$label cannot be empty.", 400);
+                Response::error(t('{field} cannot be empty.', ['field' => t($label)]), 400);
             }
             $update[$field] = $value;
         }

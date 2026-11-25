@@ -15,8 +15,8 @@ try {
     $attendanceService = new AttendanceService();
     $result = $attendanceService->startWorkday($user['id']);
     $msg = !empty($result['resumed']) 
-        ? 'Workday resumed successfully at ' . $result['time'] . '.' 
-        : 'Workday started successfully at ' . $result['time'] . '.';
+        ? t('Workday resumed successfully at {time}.', ['time' => $result['time']])
+        : t('Workday started successfully at {time}.', ['time' => $result['time']]);
     Response::success($msg, $result);
 } catch (RuntimeException $e) {
     Response::error($e->getMessage(), 409);

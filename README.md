@@ -12,7 +12,7 @@ Built with **PHP 8**, **MariaDB/MySQL**, **Tailwind CSS** and **vanilla JavaScri
 - **Virtual time clock**: a live digital clock and dial with one-click *Start workday*, *Start break*, *End break* and *End workday*.
 - **Live counters** for worked time and break time, kept in sync with the server clock.
 - **Break policy**: one 45-minute break per day by default (configurable).
-- **Shift schedule and lateness**: morning (08:00 to 12:00) and afternoon (14:00 to 18:00) shifts, with punctuality and delay calculated automatically.
+- **My Schedule**: each agent sees their planned shifts, week by week or month by month. Punctuality and delay are calculated against those shifts. Agents with no schedule follow the default one: morning (08:00 to 12:00) and afternoon (14:00 to 18:00) shifts, Monday to Friday.
 - **My history**: pick any date to see the full timeline of clock actions and totals for that day.
 - **Summary of time errors**: employees can see the clocking problems on their own days and report a time error to their manager.
 
@@ -30,6 +30,13 @@ Built with **PHP 8**, **MariaDB/MySQL**, **Tailwind CSS** and **vanilla JavaScri
   It also shows the difference between the recorded work time and the time the clock actions actually support, and can be exported as CSV.
 - **Time error reports**: review the reports employees send in and mark them resolved with a note.
 - **Correct times** (Management → Correct Times, or "Correct times" next to any error or report): fix an agent's clock-in, break and clock-out times for a day, for example when they were on time but forgot to clock in. A reason is required, and every correction is kept with who made it, when, and the times before and after. The day's totals are recalculated and the Time Errors report updates on its own. Correcting from an employee report also resolves that report. Managers can correct employees only (not themselves); administrators can correct anyone.
+- **Plan schedules** (Management → Plan Schedules): plan each agent's shifts.
+  - *Schedules* are named weekly patterns (e.g. "Early team", 06:00 to 14:00 Monday to Friday), with up to 4 shifts per day or none (day off). One schedule is the default for agents with no schedule assigned.
+  - *Assign* a schedule to one or several agents from a start date. The history is kept, so past days keep the hours that applied then.
+  - *Change single days* by clicking a day in the team plan: other hours, an extra working day, or a day off, for one agent or several, for one day or a range.
+  - The time errors report (lateness, early departure, absences), Correct Times ("Fill missing in/out" and the default times), the attendance register and the CSV exports all use each agent's planned shifts. A day with no shift planned is not counted as an absence. The team plan can be downloaded as CSV.
+  - Managers plan employees only (not themselves); administrators can plan anyone. Editing a schedule changes it on every day it is used, past days included; to change hours from a date on, create a new schedule and assign it from that date. Shifts must start and end on the same day (no overnight shifts).
+- **Leave & PTO** (Management → Leave & PTO, or "Record leave" next to an absence): record paid time off, sick leave, special leave or unpaid leave for an agent, as a full day, a morning or afternoon shift, or a date range (days with no shift planned are skipped). Those days show as leave in the time errors summary instead of an absence, with the hours counted as paid or unpaid leave, and appear in the Summary, Details and Attendance CSVs. On a half day the late/early checks use the shift that is worked. Clocking in on a full day of leave is flagged. Leave can be cancelled; the record keeps who recorded and cancelled it, and why. Leave types and whether they are paid are set in `src/Services/LeaveService.php`.
 
 ### Security
 - Passwords hashed with `password_hash()`, session fixation protection and login lockout.

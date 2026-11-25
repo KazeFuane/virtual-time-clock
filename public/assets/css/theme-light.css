@@ -1,0 +1,171 @@
+/*
+ * ClockWise - light mode
+ * The app is styled dark by default (Tailwind classes with fixed colors).
+ * When <html> has the class "theme-light", these rules swap each dark color
+ * for its light counterpart. Dark mode is untouched.
+ * Generated from the color classes used in views/ and public/; if a page
+ * starts using a new dark color class, add its light version here.
+ */
+
+html.theme-dark  { color-scheme: dark; }
+html.theme-light { color-scheme: light; background-color: #f4f2f9; color: #26203a; }
+
+/* Theme switch button: show the icon of the mode you'd switch to */
+html.theme-light [data-theme-icon="sun"],
+html:not(.theme-light) [data-theme-icon="moon"] { display: none; }
+
+/* Scrollbars */
+html.theme-light ::-webkit-scrollbar-track { background: #f4f2f9; }
+html.theme-light ::-webkit-scrollbar-thumb { background: #d6cce8; }
+html.theme-light ::-webkit-scrollbar-thumb:hover { background: #bfb2d9; }
+
+/* ---------- generated color swaps ---------- */
+html.theme-light .bg-\[\#0a0710\]{background-color:#f4f2f9}
+html.theme-light .bg-\[\#0d0914\]{background-color:#f4f2f9}
+html.theme-light .bg-\[\#0f0a17\]{background-color:#f4f2f9}
+html.theme-light .bg-\[\#102419\]{background-color:#ecfdf5}
+html.theme-light .bg-\[\#110a19\]{background-color:#f4f2f9}
+html.theme-light .bg-\[\#120a1c\]{background-color:#ffffff}
+html.theme-light .bg-\[\#120b1a\]{background-color:#ffffff}
+html.theme-light .bg-\[\#140c1d\]{background-color:#ffffff}
+html.theme-light .bg-\[\#160e22\]{background-color:#ffffff}
+html.theme-light .bg-\[\#170e22\]{background-color:#ffffff}
+html.theme-light .bg-\[\#180e25\]{background-color:#ffffff}
+html.theme-light .bg-\[\#1a1226\]{background-color:#f7f5fc}
+html.theme-light .bg-\[\#1a1228\]{background-color:#f7f5fc}
+html.theme-light .bg-\[\#1a122e\]{background-color:#f5f3ff}
+html.theme-light .bg-\[\#1b1226\]{background-color:#f7f5fc}
+html.theme-light .bg-\[\#1c1228\]{background-color:#f7f5fc}
+html.theme-light .bg-\[\#1f152b\]{background-color:#f7f5fc}
+html.theme-light .bg-\[\#221530\]{background-color:#eee9f7}
+html.theme-light .bg-\[\#221532\]{background-color:#eee9f7}
+html.theme-light .bg-\[\#291017\]{background-color:#fff1f2}
+html.theme-light .bg-\[\#2b1f0e\]{background-color:#fffbeb}
+html.theme-light .bg-amber-900\/40{background-color:#fffbeb}
+html.theme-light .bg-amber-950{background-color:#fef3c7}
+html.theme-light .bg-amber-950\/30{background-color:#fffbeb}
+html.theme-light .bg-black\/60{background-color:rgba(28,22,48,.35)}
+html.theme-light .bg-black\/70{background-color:rgba(28,22,48,.35)}
+html.theme-light .bg-emerald-700\/50{background-color:#d1fae5}
+html.theme-light .bg-emerald-700\/60{background-color:#d1fae5}
+html.theme-light .bg-emerald-950{background-color:#d1fae5}
+html.theme-light .bg-emerald-950\/30{background-color:#ecfdf5}
+html.theme-light .bg-emerald-950\/60{background-color:#d1fae5}
+html.theme-light .bg-gray-800{background-color:#e5e7eb}
+html.theme-light .bg-purple-900{background-color:#ede9fe}
+html.theme-light .bg-purple-900\/40{background-color:#f5f3ff}
+html.theme-light .bg-purple-900\/50{background-color:#ede9fe}
+html.theme-light .bg-purple-950{background-color:#ede9fe}
+html.theme-light .bg-purple-950\/30{background-color:#f5f3ff}
+html.theme-light .bg-purple-950\/60{background-color:#ede9fe}
+html.theme-light .bg-red-950{background-color:#fee2e2}
+html.theme-light .bg-red-950\/40{background-color:#fef2f2}
+html.theme-light .bg-red-950\/60{background-color:#fee2e2}
+html.theme-light .border-\[\#231733\]{border-color:#e3dcef}
+html.theme-light .border-\[\#251738\]{border-color:#e3dcef}
+html.theme-light .border-\[\#261738\]{border-color:#e3dcef}
+html.theme-light .border-\[\#26183a\]{border-color:#e3dcef}
+html.theme-light .border-\[\#261936\]{border-color:#e3dcef}
+html.theme-light .border-\[\#281b3b\]{border-color:#e3dcef}
+html.theme-light .border-\[\#281b3d\]{border-color:#e3dcef}
+html.theme-light .border-\[\#2d1e44\]{border-color:#e3dcef}
+html.theme-light .border-\[\#2e1d44\]{border-color:#e3dcef}
+html.theme-light .border-\[\#2f1c46\]{border-color:#e3dcef}
+html.theme-light .border-\[\#312048\]{border-color:#d6cce8}
+html.theme-light .border-\[\#312246\]{border-color:#d6cce8}
+html.theme-light .border-amber-700{border-color:#fcd34d}
+html.theme-light .border-amber-800{border-color:#fcd34d}
+html.theme-light .border-amber-900\/60{border-color:#fcd34d}
+html.theme-light .border-emerald-700{border-color:#a7f3d0}
+html.theme-light .border-emerald-800{border-color:#a7f3d0}
+html.theme-light .border-gray-700{border-color:#d1d5db}
+html.theme-light .border-purple-700{border-color:#ddd6fe}
+html.theme-light .border-purple-700\/60{border-color:#ddd6fe}
+html.theme-light .border-purple-800{border-color:#ddd6fe}
+html.theme-light .border-purple-800\/50{border-color:#ddd6fe}
+html.theme-light .border-red-800{border-color:#fecaca}
+html.theme-light .border-red-900{border-color:#fecaca}
+html.theme-light .border-red-900\/60{border-color:#fecaca}
+html.theme-light .border-rose-900{border-color:#fecdd3}
+html.theme-light .divide-\[\#231733\] > :not([hidden]) ~ :not([hidden]){border-color:#e3dcef}
+html.theme-light .divide-\[\#2d1e44\] > :not([hidden]) ~ :not([hidden]){border-color:#e3dcef}
+html.theme-light .hover\:bg-\[\#1a1226\]\/50:hover{background-color:#eee9f7}
+html.theme-light .hover\:bg-\[\#1a1226\]\/60:hover{background-color:#eee9f7}
+html.theme-light .hover\:bg-\[\#1c1228\]:hover{background-color:#f7f5fc}
+html.theme-light .hover\:bg-\[\#221530\]:hover{background-color:#eee9f7}
+html.theme-light .hover\:bg-\[\#251936\]:hover{background-color:#eee9f7}
+html.theme-light .hover\:bg-\[\#26173a\]:hover{background-color:#eee9f7}
+html.theme-light .hover\:bg-\[\#2c1c3f\]:hover{background-color:#e6dff4}
+html.theme-light .hover\:bg-amber-800\/60:hover{background-color:#fef3c7}
+html.theme-light .hover\:bg-emerald-900\/60:hover{background-color:#d1fae5}
+html.theme-light .hover\:bg-purple-800\/60:hover{background-color:#ede9fe}
+html.theme-light .hover\:bg-purple-900\/60:hover{background-color:#ede9fe}
+html.theme-light .hover\:bg-red-900\/60:hover{background-color:#fee2e2}
+html.theme-light .hover\:bg-red-950:hover{background-color:#fee2e2}
+html.theme-light .hover\:text-gray-200:hover{color:#26203a}
+html.theme-light .hover\:text-purple-200:hover{color:#5b21b6}
+html.theme-light .hover\:text-purple-300:hover{color:#6d28d9}
+html.theme-light .hover\:text-purple-400:hover{color:#6d28d9}
+html.theme-light .hover\:text-red-200:hover{color:#991b1b}
+html.theme-light .hover\:text-red-300:hover{color:#b91c1c}
+html.theme-light .hover\:text-white:hover{color:#1c1630}
+html.theme-light .placeholder-gray-500::placeholder{color:#736c88}
+html.theme-light .ring-purple-700{--tw-ring-color:#ddd6fe}
+html.theme-light .shadow-amber-950\/40{--tw-shadow-color:rgba(76,56,120,.12)}
+html.theme-light .shadow-emerald-950\/40{--tw-shadow-color:rgba(76,56,120,.12)}
+html.theme-light .shadow-purple-900\/30{--tw-shadow-color:rgba(76,56,120,.12)}
+html.theme-light .shadow-purple-900\/40{--tw-shadow-color:rgba(76,56,120,.12)}
+html.theme-light .shadow-purple-950\/40{--tw-shadow-color:rgba(76,56,120,.12)}
+html.theme-light .shadow-rose-950\/40{--tw-shadow-color:rgba(76,56,120,.12)}
+html.theme-light .text-amber-200{color:#92400e}
+html.theme-light .text-amber-300{color:#b45309}
+html.theme-light .text-amber-400{color:#b45309}
+html.theme-light .text-emerald-100{color:#065f46}
+html.theme-light .text-emerald-200{color:#065f46}
+html.theme-light .text-emerald-300{color:#047857}
+html.theme-light .text-emerald-400{color:#047857}
+html.theme-light .text-gray-100{color:#1c1630}
+html.theme-light .text-gray-200{color:#26203a}
+html.theme-light .text-gray-300{color:#3d3652}
+html.theme-light .text-gray-400{color:#5d5672}
+html.theme-light .text-gray-500{color:#736c88}
+html.theme-light .text-gray-600{color:#8f89a3}
+html.theme-light .text-purple-200{color:#5b21b6}
+html.theme-light .text-purple-300{color:#6d28d9}
+html.theme-light .text-purple-300\/70{color:#6d28d9}
+html.theme-light .text-purple-400{color:#6d28d9}
+html.theme-light .text-red-200{color:#991b1b}
+html.theme-light .text-red-300{color:#b91c1c}
+html.theme-light .text-red-400{color:#b91c1c}
+html.theme-light .text-rose-200{color:#9f1239}
+html.theme-light .text-rose-400{color:#be123c}
+html.theme-light .text-rose-500{color:#be123c}
+html.theme-light .text-sky-400{color:#0369a1}
+html.theme-light .text-white{color:#1c1630}
+
+/* ---------- hand-tuned ---------- */
+
+/* Sidebar: current page / hover highlight must stand out on white */
+html.theme-light .bg-\[\#221530\],
+html.theme-light .hover\:bg-\[\#221530\]:hover { background-color: #ebe4f8; }
+html.theme-light .bg-\[\#1c1228\],
+html.theme-light .hover\:bg-\[\#1c1228\]:hover { background-color: #f1ecfa; }
+
+/* Solid colored buttons, badges and avatars keep white text */
+html.theme-light :is(.bg-purple-600, .bg-purple-700, .bg-emerald-600, .bg-amber-600, .bg-red-600, .bg-red-700,
+                     .bg-rose-600, .bg-gray-600, .bg-emerald-500\/70, .bg-amber-500\/70,
+                     .bg-gradient-to-r, .bg-gradient-to-tr, .bg-gradient-to-br, .bg-gradient-to-l):is(.text-white, .text-gray-100, .text-gray-200, .hover\:text-white),
+html.theme-light :is(.bg-purple-600, .bg-purple-700, .bg-emerald-600, .bg-amber-600, .bg-red-600, .bg-red-700,
+                     .bg-rose-600, .bg-gray-600, .bg-emerald-500\/70, .bg-amber-500\/70,
+                     .bg-gradient-to-r, .bg-gradient-to-tr, .bg-gradient-to-br, .bg-gradient-to-l) :is(.text-white, .text-gray-100, .text-gray-200) { color: #ffffff; }
+html.theme-light :is(.hover\:bg-purple-500, .hover\:bg-purple-600, .hover\:bg-red-600, .hover\:bg-rose-500,
+                     .hover\:bg-emerald-500, .hover\:bg-amber-500, .hover\:bg-emerald-600\/60, .hover\:bg-emerald-600\/70):hover { color: #ffffff; }
+
+/* Dashboard stopwatch: light case instead of the dark one */
+html.theme-light svg [fill="#1b1226"] { fill: #ffffff; }
+
+/* Softer drop shadows on light backgrounds */
+html.theme-light .shadow-2xl, html.theme-light .shadow-xl { --tw-shadow-color: rgba(76, 56, 120, .14); --tw-shadow: var(--tw-shadow-colored); }
+
+/* Header search: highlighted result */
+html.theme-light .bg-\[\#26173a\] { background-color: #ebe4f8; }

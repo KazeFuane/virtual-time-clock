@@ -71,6 +71,7 @@ try {
         'from'      => $from,
         'to'        => $to,
         'labels'    => $summary['labels'],
+        'leave_labels' => $summary['leave_labels'],
         'summary'   => $me,
         'is_self'   => $targetId === $userId,
         'agents'    => $agents,

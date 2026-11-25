@@ -6,11 +6,11 @@ require_once __DIR__ . '/../src/bootstrap.php';
 
 $currentUser = AuthMiddleware::requireAuth();
 
-$moduleName = htmlspecialchars($_GET['module'] ?? 'Module');
+$moduleName = htmlspecialchars(t((string) ($_GET['module'] ?? 'Module')));
 
 $pageTitle = $moduleName . ' &mdash; ClockWise';
 $breadcrumbs = [
-    ['label' => 'Time Clock', 'url' => '/virtual-time-clock/public/dashboard.php'],
+    ['label' => t('Time Clock'), 'url' => '/virtual-time-clock/public/dashboard.php'],
     ['label' => $moduleName, 'url' => '']
 ];
 
@@ -24,11 +24,11 @@ ob_start();
         </div>
         <h1 class="text-xl font-bold text-white mb-2"><?= $moduleName ?></h1>
         <p class="text-xs text-gray-400 max-w-md mx-auto mb-6">
-            This module is reserved for enterprise portal expansion. You can easily plug business logic into this route without restructuring the core attendance system.
+            <?= t('This module is reserved for enterprise portal expansion. You can easily plug business logic into this route without restructuring the core attendance system.') ?>
         </p>
         <a href="/virtual-time-clock/public/dashboard.php" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-semibold shadow-md shadow-purple-900/40 transition">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-            Return to Time Clock
+            <?= t('Return to Time Clock') ?>
         </a>
     </div>
 </div>

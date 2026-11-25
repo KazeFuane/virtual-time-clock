@@ -6,11 +6,11 @@ require_once __DIR__ . '/../src/bootstrap.php';
 
 $currentUser = AuthMiddleware::requireAuth();
 
-$pageTitle = 'Time Clock &mdash; ClockWise';
+$pageTitle = t('Time Clock') . ' &mdash; ' . APP_NAME;
 $breadcrumbs = [
-    ['label' => 'Time Clock', 'url' => '/virtual-time-clock/public/dashboard.php'],
-    ['label' => 'Time Management', 'url' => '#'],
-    ['label' => 'Virtual Time Clock', 'url' => '']
+    ['label' => t('Time Clock'), 'url' => '/virtual-time-clock/public/dashboard.php'],
+    ['label' => t('Time Management'), 'url' => '#'],
+    ['label' => t('Virtual Time Clock'), 'url' => '']
 ];
 
 ob_start();
@@ -25,19 +25,19 @@ ob_start();
                 <span class="inline-flex p-1 rounded-full bg-purple-900/50 text-purple-400">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 </span>
-                <h1 class="text-xl font-bold text-white tracking-wide">Virtual Time Clock</h1>
+                <h1 class="text-xl font-bold text-white tracking-wide"><?= t('Virtual Time Clock') ?></h1>
             </div>
             <p class="text-xs text-gray-400 mt-1">
-                You are currently logged in. <span id="status-hint" class="text-purple-300"></span>
+                <?= t('You are currently logged in.') ?> <span id="status-hint" class="text-purple-300"></span>
             </p>
         </div>
 
         <div class="flex items-center gap-3">
             <span id="status-badge" class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-800 text-gray-300 border border-gray-700">
-                LOADING...
+                <?= t('LOADING...') ?>
             </span>
-            <div class="text-right">
-                <div class="text-[11px] text-gray-500">Casablanca Local Time</div>
+            <div class="text-end">
+                <div class="text-[11px] text-gray-500"><?= t('Casablanca Local Time') ?></div>
                 <div id="digital-clock" class="text-lg font-mono font-bold text-purple-200">--:--:--</div>
             </div>
         </div>
@@ -87,19 +87,24 @@ ob_start();
         <!-- Metric KPI badges -->
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mt-4 w-full max-w-2xl text-center">
             <div class="bg-[#170e22] border border-[#2e1d44] rounded-xl p-3 shadow-md">
-                <div class="text-[11px] text-gray-400 uppercase font-medium tracking-wider">Scheduled Shifts</div>
-                <div class="text-xs font-semibold text-purple-300 mt-1">08:00-12:00 &bull; 14:00-18:00</div>
+                <div class="text-[11px] text-gray-400 uppercase font-medium tracking-wider"><?= t('Scheduled Shifts') ?></div>
+                <div class="text-xs font-semibold text-purple-300 mt-1"><?php
+                    $todayShifts = ScheduleService::shiftsOrDefault((int) $currentUser['id'], TimeHelper::currentDate());
+                    echo $todayShifts
+                        ? implode(' &bull; ', array_map(fn($sh) => substr($sh['start'], 0, 5) . '-' . substr($sh['end'], 0, 5), $todayShifts))
+                        : t('No shift today');
+                ?></div>
             </div>
             <div class="bg-[#170e22] border border-[#2e1d44] rounded-xl p-3 shadow-md">
-                <div class="text-[11px] text-gray-400 uppercase font-medium tracking-wider">Shift Punctuality</div>
+                <div class="text-[11px] text-gray-400 uppercase font-medium tracking-wider"><?= t('Shift Punctuality') ?></div>
                 <div id="val-punctuality" class="text-xs font-bold text-gray-300 mt-1">--</div>
             </div>
             <div class="bg-[#170e22] border border-[#2e1d44] rounded-xl p-3 shadow-md">
-                <div class="text-[11px] text-emerald-400 uppercase font-medium tracking-wider">Working Time</div>
+                <div class="text-[11px] text-emerald-400 uppercase font-medium tracking-wider"><?= t('Working Time') ?></div>
                 <div id="val-work-time" class="font-mono text-sm sm:text-base font-bold text-emerald-300 mt-0.5">00:00:00</div>
             </div>
             <div class="bg-[#170e22] border border-[#2e1d44] rounded-xl p-3 shadow-md">
-                <div class="text-[11px] text-amber-400 uppercase font-medium tracking-wider">Break (Max 45m)</div>
+                <div class="text-[11px] text-amber-400 uppercase font-medium tracking-wider"><?= t('Break (Max 45m)') ?></div>
                 <div id="val-break-time" class="font-mono text-sm sm:text-base font-bold text-amber-300 mt-0.5">00:00:00</div>
             </div>
         </div>
@@ -111,25 +116,25 @@ ob_start();
         <!-- Start Workday (Green) -->
         <button id="btn-start-work" type="button" class="flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-xs sm:text-sm text-white bg-emerald-600 hover:bg-emerald-500 shadow-lg shadow-emerald-950/40 transition">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
-            <span>Start Workday</span>
+            <span><?= t('Start Workday') ?></span>
         </button>
 
         <!-- End Workday (Red) -->
         <button id="btn-end-work" type="button" class="flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-xs sm:text-sm text-white bg-rose-600 hover:bg-rose-500 shadow-lg shadow-rose-950/40 transition">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
-            <span>End Workday</span>
+            <span><?= t('End Workday') ?></span>
         </button>
 
         <!-- Start Break (Purple / Violet) -->
         <button id="btn-start-break" type="button" class="flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-xs sm:text-sm text-white bg-purple-700 hover:bg-purple-600 shadow-lg shadow-purple-950/40 transition">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            <span>Start Break</span>
+            <span><?= t('Start Break') ?></span>
         </button>
 
         <!-- End Break (Orange / Amber) -->
         <button id="btn-end-break" type="button" class="flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-xs sm:text-sm text-white bg-amber-600 hover:bg-amber-500 shadow-lg shadow-amber-950/40 transition">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
-            <span>End Break</span>
+            <span><?= t('End Break') ?></span>
         </button>
     </div>
 
@@ -138,10 +143,10 @@ ob_start();
         <div class="flex items-center justify-between mb-4">
             <div class="flex items-center gap-2">
                 <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                <h2 class="text-base font-semibold text-white">My History</h2>
+                <h2 class="text-base font-semibold text-white"><?= t('My History') ?></h2>
             </div>
             <a href="/virtual-time-clock/public/history.php" class="text-xs text-purple-400 hover:text-purple-300 font-medium transition flex items-center gap-1">
-                <span>View Full History</span>
+                <span><?= t('View Full History') ?></span>
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
             </a>
         </div>
@@ -155,18 +160,18 @@ ob_start();
 
         <!-- History actions table -->
         <div class="bg-[#140c1d] border border-[#251738] rounded-xl overflow-hidden max-w-2xl mx-auto shadow-lg">
-            <table class="w-full text-left text-xs">
+            <table class="w-full text-start text-xs">
                 <thead class="bg-[#1c1228] text-gray-400 font-semibold border-b border-[#251738]">
                     <tr>
-                        <th class="py-2.5 px-4">Action Time</th>
-                        <th class="py-2.5 px-4">Action</th>
-                        <th class="py-2.5 px-4 text-right">Session Status</th>
+                        <th class="py-2.5 px-4"><?= t('Action Time') ?></th>
+                        <th class="py-2.5 px-4"><?= t('Action') ?></th>
+                        <th class="py-2.5 px-4 text-end"><?= t('Session Status') ?></th>
                     </tr>
                 </thead>
                 <tbody id="today-actions-tbody" class="divide-y divide-[#231733]">
                     <tr>
                         <td colspan="3" class="py-6 text-center text-gray-500">
-                            Loading today's logs...
+                            <?= t('Loading today\'s logs...') ?>
                         </td>
                     </tr>
                 </tbody>

@@ -14,7 +14,7 @@ $user = AuthMiddleware::requireAuth();
 try {
     $attendanceService = new AttendanceService();
     $result = $attendanceService->startBreak($user['id']);
-    Response::success('Break started successfully at ' . $result['time'] . '. Max cumulative break allowed is 45 minutes.', $result);
+    Response::success(t('Break started successfully at {time}. Max cumulative break allowed is 45 minutes.', ['time' => $result['time']]), $result);
 } catch (RuntimeException $e) {
     Response::error($e->getMessage(), 409);
 } catch (\Throwable $e) {
