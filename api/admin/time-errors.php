@@ -31,21 +31,32 @@ if ($format === 'csv') {
     $csv = new CsvExport($name . '_' . $from . '_' . $to . '.csv');
 
     if ($detail) {
-        $csv->row(array_map('t', ['Agent', 'Username', 'Date', 'Error', 'Detail', 'Time impact']));
-        foreach ($summary['agents'] as $a) {
+        $csv->row(array_map('t', ['Agent', 'Username', 'Day', 'Date', 'Error', 'Detail', 'Time impact']));
+        $agents = $summary['agents'];
+        usort($agents, fn($x, $y) => strcasecmp($x['name'], $y['name']));
+        foreach ($agents as $a) {
+            $lines = [];
             foreach ($a['incidents'] as $i) {
-                $csv->row([
-                    $a['name'], $a['username'], $i['work_date'], $i['label'], $i['detail'],
-                    CsvExport::duration($i['impact_seconds'] === null ? null : (int) $i['impact_seconds']),
-                ]);
+                $lines[] = [$i['work_date'], $i['label'], $i['detail'],
+                    CsvExport::duration($i['impact_seconds'] === null ? null : (int) $i['impact_seconds'])];
             }
             // Leave is not an error, but listed so the sheet shows why a day has no clock times.
             foreach ($a['leave_days'] as $l) {
-                $csv->row([
-                    $a['name'], $a['username'], $l['work_date'],
+                $lines[] = [$l['work_date'],
                     t('Leave:') . ' ' . $l['label'] . ' ' . ($l['paid'] ? t('(paid)') : t('(unpaid)')),
                     $l['part_label'] . ($l['planned'] ? ', ' . t('planned') : '') . ($l['note'] !== '' ? '. ' . $l['note'] : ''),
-                    CsvExport::duration((int) $l['seconds']),
+                    CsvExport::duration((int) $l['seconds'])];
+            }
+            // One agent at a time, oldest day first.
+            usort($lines, fn($x, $y) => strcmp($x[0], $y[0]));
+            foreach ($lines as [$date, $error, $text, $impact]) {
+                $d = new DateTime($date);
+                $csv->row([
+                    $a['name'], $a['username'], t($d->format('l')),
+                    // DD/MM/YYYY as text, so Excel shows it exactly like the page
+                    // instead of switching it to its own date format.
+                    "\u{200B}" . $d->format('d/m/Y'),
+                    $error, $text, $impact,
                 ]);
             }
         }
