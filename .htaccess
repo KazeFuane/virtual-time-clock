@@ -1,0 +1,26 @@
+# =====================================================
+# ClockWise - web server rules for shared hosting (Apache)
+# =====================================================
+# Only public/ (pages, CSS, JS) and api/ (JSON endpoints) may be
+# opened from a browser. Everything else in this folder (.env,
+# config/, src/, database/, lang/, views/, .git/) is blocked.
+
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # /virtual-time-clock/  ->  sign-in page
+    RewriteRule ^$ %{REQUEST_URI}public/ [R=302,L]
+
+    # Block dotfiles and dot-folders anywhere (.env, .git, .htaccess)
+    RewriteRule (^|/)\. - [F,L]
+
+    # Block every path that is not inside public/ or api/
+    RewriteRule !^(public|api)/ - [F,L]
+</IfModule>
+
+# Fallback if mod_rewrite is missing: still hide secrets and source files
+<FilesMatch "(^\.|\.(env|sql|md|log|json|sh)$)">
+    Require all denied
+</FilesMatch>
