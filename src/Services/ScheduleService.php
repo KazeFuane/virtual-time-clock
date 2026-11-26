@@ -577,6 +577,105 @@ class ScheduleService
         $this->db->prepare("DELETE FROM schedule_overrides WHERE user_id = ? AND work_date = ?")->execute([$userId, $date]);
     }
 
+    // =================================================================
+    // Undo (the "Undo" pop-up after a schedule change, see UndoService)
+    // =================================================================
+
+    /** [user_id, start_date] of an assignment, or null if it does not exist. */
+    public function assignmentKey(int $assignmentId): ?array
+    {
+        $stmt = $this->db->prepare("SELECT user_id, start_date FROM schedule_assignments WHERE id = ?");
+        $stmt->execute([$assignmentId]);
+        $r = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $r ? [(int) $r['user_id'], $r['start_date']] : null;
+    }
+
+    /**
+     * The assignment rows and day-change rows at these keys, as they are now
+     * (null where there is none). Keys are [user_id, date] pairs.
+     */
+    public function snapshot(array $assignmentKeys, array $overrideKeys): array
+    {
+        $out = ['assignments' => [], 'overrides' => []];
+        $stmt = $this->db->prepare("SELECT id, user_id, template_id, start_date, assigned_by, created_at FROM schedule_assignments WHERE user_id = ? AND start_date = ?");
+        foreach ($assignmentKeys as [$uid, $date]) {
+            $stmt->execute([(int) $uid, $date]);
+            $out['assignments'][] = ['user_id' => (int) $uid, 'date' => $date, 'row' => $stmt->fetch(PDO::FETCH_ASSOC) ?: null];
+        }
+        $stmt = $this->db->prepare("SELECT id, user_id, work_date, shifts_json, note, created_by, created_at, updated_at FROM schedule_overrides WHERE user_id = ? AND work_date = ?");
+        foreach ($overrideKeys as [$uid, $date]) {
+            $stmt->execute([(int) $uid, $date]);
+            $out['overrides'][] = ['user_id' => (int) $uid, 'date' => $date, 'row' => $stmt->fetch(PDO::FETCH_ASSOC) ?: null];
+        }
+        return $out;
+    }
+
+    /** Same rows, ignoring the time stamps. */
+    private static function sameSnapshot(array $a, array $b): bool
+    {
+        $norm = function (array $snap): array {
+            $keep = ['id', 'template_id', 'shifts_json', 'note'];
+            $out = [];
+            foreach (['assignments', 'overrides'] as $k) {
+                foreach ($snap[$k] ?? [] as $e) {
+                    $row = $e['row'] ? array_map('strval', array_intersect_key($e['row'], array_flip($keep))) : null;
+                    if ($row) {
+                        ksort($row);
+                    }
+                    $out[] = [$k, (int) $e['user_id'], $e['date'], $row];
+                }
+            }
+            return $out;
+        };
+        return $norm($a) === $norm($b);
+    }
+
+    /**
+     * Put the rows back as they were before a change: $p = ['before' => snapshot,
+     * 'after' => snapshot]. Refused if someone changed them again since.
+     * Runs inside UndoService's transaction.
+     */
+    public function restoreSnapshot(array $editor, array $p): void
+    {
+        $before = $p['before'] ?? [];
+        $after = $p['after'] ?? [];
+        $users = [];
+        foreach (['assignments', 'overrides'] as $k) {
+            foreach ($before[$k] ?? [] as $e) {
+                $users[(int) $e['user_id']] = true;
+            }
+        }
+        foreach (array_keys($users) as $uid) {
+            $this->checkPermission($editor, $uid);
+        }
+
+        $keys = fn(array $snap, string $k) => array_map(fn($e) => [(int) $e['user_id'], $e['date']], $snap[$k] ?? []);
+        $now = $this->snapshot($keys($after, 'assignments'), $keys($after, 'overrides'));
+        if (!self::sameSnapshot($now, $after)) {
+            throw new RuntimeException('This schedule changed again since. Undo is not possible; change it by hand.');
+        }
+
+        $delA = $this->db->prepare("DELETE FROM schedule_assignments WHERE user_id = ? AND start_date = ?");
+        $insA = $this->db->prepare("INSERT INTO schedule_assignments (id, user_id, template_id, start_date, assigned_by, created_at) VALUES (?, ?, ?, ?, ?, ?)");
+        foreach ($before['assignments'] ?? [] as $e) {
+            $delA->execute([(int) $e['user_id'], $e['date']]);
+            if ($r = $e['row']) {
+                if (!$this->templateExists((int) $r['template_id'])) {
+                    throw new RuntimeException('The schedule that was assigned no longer exists. Undo is not possible.');
+                }
+                $insA->execute([(int) $r['id'], (int) $r['user_id'], (int) $r['template_id'], $r['start_date'], $r['assigned_by'], $r['created_at']]);
+            }
+        }
+        $delO = $this->db->prepare("DELETE FROM schedule_overrides WHERE user_id = ? AND work_date = ?");
+        $insO = $this->db->prepare("INSERT INTO schedule_overrides (id, user_id, work_date, shifts_json, note, created_by, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        foreach ($before['overrides'] ?? [] as $e) {
+            $delO->execute([(int) $e['user_id'], $e['date']]);
+            if ($r = $e['row']) {
+                $insO->execute([(int) $r['id'], (int) $r['user_id'], $r['work_date'], $r['shifts_json'], $r['note'], $r['created_by'], $r['created_at'], $r['updated_at']]);
+            }
+        }
+    }
+
     private function templateExists(int $id): bool
     {
         $stmt = $this->db->prepare("SELECT 1 FROM schedule_templates WHERE id = ?");

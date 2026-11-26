@@ -13,11 +13,14 @@
  *      remove_assignment {id}
  *      set_day           {user_ids: [..], from, to?, shifts: [["08:00","12:00"], ...], note?}  ([] = day off)
  *      clear_day         {user_ids: [..], from, to?}                                           (back to the schedule)
+ *      assign, remove_assignment, set_day and clear_day answer with data.undo {token, seconds}
+ *      for the "Undo" pop-up (api/admin/undo.php).
  */
 require_once __DIR__ . '/../../src/bootstrap.php';
 require_once ROOT_PATH . '/src/Services/TimeErrorService.php';
 require_once ROOT_PATH . '/src/Services/LeaveService.php';
 require_once ROOT_PATH . '/src/Services/ScheduleService.php';
+require_once ROOT_PATH . '/src/Services/UndoService.php';
 
 $caller = AdminMiddleware::requireManager();
 
@@ -42,6 +45,17 @@ try {
     $db = Database::getInstance()->getConnection();
     $service = new ScheduleService($db);
 
+    /** Save how to put the rows back, for the "Undo" pop-up (null if nothing changed). */
+    // Created here, outside the transactions below: creating its table on
+    // first use would end an open transaction.
+    $undoService = new UndoService($db);
+    $recordUndo = function (?array $before, array $after) use ($undoService, $caller): ?array {
+        if ($before === null || $before == $after) {
+            return null;
+        }
+        return $undoService->record($caller, 'schedule', ['before' => $before, 'after' => $after]);
+    };
+
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         CsrfMiddleware::validate();
         $in = Validator::getJsonInput();
@@ -64,15 +78,24 @@ try {
                 foreach ($userIds as $uid) {
                     $service->checkPermission($caller, $uid);
                 }
+                $startDate = (string) ($in['start_date'] ?? '');
+                $keys = array_map(fn($uid) => [$uid, $startDate], $userIds);
                 $db->beginTransaction();
+                $before = $service->snapshot($keys, []);
                 foreach ($userIds as $uid) {
-                    $service->assign($caller, $uid, (int) ($in['template_id'] ?? 0), (string) ($in['start_date'] ?? ''));
+                    $service->assign($caller, $uid, (int) ($in['template_id'] ?? 0), $startDate);
                 }
+                $undo = $recordUndo($before, $service->snapshot($keys, []));
                 $db->commit();
-                Response::success(count($userIds) > 1 ? t('Schedule assigned to {n} agents.', ['n' => count($userIds)]) : 'Schedule assigned.');
+                Response::success(count($userIds) > 1 ? t('Schedule assigned to {n} agents.', ['n' => count($userIds)]) : 'Schedule assigned.', ['undo' => $undo]);
             case 'remove_assignment':
+                $key = $service->assignmentKey((int) ($in['id'] ?? 0));
+                $db->beginTransaction();
+                $before = $key ? $service->snapshot([$key], []) : null;
                 $service->removeAssignment($caller, (int) ($in['id'] ?? 0));
-                Response::success('Assignment removed.');
+                $undo = $recordUndo($before, $service->snapshot([$key], []));
+                $db->commit();
+                Response::success('Assignment removed.', ['undo' => $undo]);
             case 'set_day':
             case 'clear_day':
                 if (!$userIds) {
@@ -83,7 +106,14 @@ try {
                 foreach ($userIds as $uid) {
                     $service->checkPermission($caller, $uid);
                 }
+                $keys = [];
+                foreach ($userIds as $uid) {
+                    foreach ($dates as $date) {
+                        $keys[] = [$uid, $date];
+                    }
+                }
                 $db->beginTransaction();
+                $before = $service->snapshot([], $keys);
                 foreach ($userIds as $uid) {
                     foreach ($dates as $date) {
                         if ($in['action'] === 'set_day') {
@@ -93,8 +123,9 @@ try {
                         }
                     }
                 }
+                $undo = $recordUndo($before, $service->snapshot([], $keys));
                 $db->commit();
-                Response::success($in['action'] === 'set_day' ? 'Day planned.' : 'Back to the schedule.');
+                Response::success($in['action'] === 'set_day' ? 'Day planned.' : 'Back to the schedule.', ['undo' => $undo]);
             default:
                 Response::error('Unknown action.');
         }

@@ -290,13 +290,17 @@ $pageScripts = <<<'HTML'
         const line = s => s && s.actions && s.actions.length
             ? s.actions.map(a => `${LABEL[a.action_type] || a.action_type} ${hm(a.action_time)}`).join(", ")
             : t("no clock actions");
+        // An undo is saved as a correction with the reason "Undo of correction #N"
+        const undoOf = c => { const m = /^Undo of correction #(\d+)$/.exec(c.reason || ""); return m ? parseInt(m[1], 10) : 0; };
+        const undone = new Set(list.map(undoOf).filter(Boolean));
         $("tc-history").innerHTML = list.length ? list.map(c => `
             <div class="px-4 py-3 text-xs">
                 <div><span class="font-mono text-gray-400">${esc(c.created_at)}</span>
                     <span class="ms-2 text-white font-semibold">${esc(c.editor_first_name || "?")} ${esc(c.editor_last_name || "")}</span>
-                    <span class="text-gray-400">${t("corrected")}</span>
-                    <a href="?user_id=${c.user_id}&date=${esc(c.work_date)}" class="text-purple-300 hover:underline">${esc(c.first_name)} ${esc(c.last_name)}, ${esc(c.work_date)}</a></div>
-                <div class="text-[11px] text-gray-300 mt-1">${t("Reason:")} "${esc(c.reason)}"</div>
+                    <span class="text-gray-400">${undoOf(c) ? t("undid a correction for") : t("corrected")}</span>
+                    <a href="?user_id=${c.user_id}&date=${esc(c.work_date)}" class="text-purple-300 hover:underline">${esc(c.first_name)} ${esc(c.last_name)}, ${esc(c.work_date)}</a>
+                    ${undone.has(Number(c.id)) ? `<span class="ms-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-950 text-amber-300 border border-amber-800">${t("undone")}</span>` : ""}</div>
+                <div class="text-[11px] text-gray-300 mt-1">${undoOf(c) ? `<span class="text-amber-300">${t("Undo of correction #{id}", { id: undoOf(c) })}</span>` : `${t("Reason:")} "${esc(c.reason)}"`}</div>
                 <div class="text-[11px] text-gray-500 mt-1">${t("Before:")} ${esc(line(c.before))}</div>
                 <div class="text-[11px] text-emerald-300">${t("After:")} ${esc(line(c.after))}</div>
             </div>`).join("") : `<div class="py-6 text-center text-xs text-gray-500">${t("No corrections yet.")}</div>`;
@@ -466,8 +470,12 @@ $pageScripts = <<<'HTML'
             report_id: reportId || null,
         });
         btn.disabled = false;
-        showToast(res.message, res.success ? "success" : "error");
-        if (res.success) { $("tc-reason").value = ""; reportId = 0; loadDay(); loadPeriod(); }
+        if (res.success) {
+            showUndoToast(res.message, res.data.undo, () => { loadDay(); loadPeriod(); });
+            $("tc-reason").value = ""; reportId = 0; loadDay(); loadPeriod();
+        } else {
+            showToast(res.message, "error");
+        }
     });
 
     document.addEventListener("DOMContentLoaded", async () => {

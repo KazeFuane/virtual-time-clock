@@ -224,8 +224,9 @@ class TimeCorrectionService
             ]);
             $correctionId = (int) $this->db->lastInsertId();
 
+            $reportResolved = false;
             if ($reportId) {
-                $this->resolveReport($reportId, $userId, $date, (int) $editor['id'], $reason);
+                $reportResolved = $this->resolveReport($reportId, $userId, $date, (int) $editor['id'], $reason);
             }
 
             $this->db->commit();
@@ -234,7 +235,97 @@ class TimeCorrectionService
             throw $e;
         }
 
-        return ['correction_id' => $correctionId] + $this->getDay($userId, $date);
+        $now = $this->getDay($userId, $date);
+        return ['correction_id' => $correctionId] + $now + [
+            // What UndoService needs to put the day back (see undoCorrection)
+            'undo_payload' => [
+                'correction_id'   => $correctionId,
+                'user_id'         => $userId,
+                'date'            => $date,
+                'before'          => $before,
+                'after_actions'   => $now['actions'],
+                'after_has_day'   => (bool) $now['day'],
+                'report_id'       => $reportResolved ? $reportId : null,
+            ],
+        ];
+    }
+
+    /**
+     * Undo a correction just made (the "Undo" pop-up, see UndoService): put
+     * the day back exactly as it was, and write that to the audit trail as a
+     * correction of its own. Refused if the day changed again since.
+     * Runs inside UndoService's transaction.
+     */
+    public function undoCorrection(array $editor, int $correctionId, array $p): void
+    {
+        $userId = (int) ($p['user_id'] ?? 0);
+        $date = (string) ($p['date'] ?? '');
+        $this->checkPermission($editor, $userId);
+
+        $current = $this->getDay($userId, $date);
+        if (!self::sameActions($current['actions'], $p['after_actions'] ?? []) || (bool) $current['day'] !== (bool) ($p['after_has_day'] ?? false)) {
+            throw new RuntimeException('These times changed again since. Undo is not possible; correct them by hand.');
+        }
+
+        $before = $p['before'] ?? ['day' => null, 'actions' => [], 'breaks' => []];
+        $old = $before['day'] ?? null;
+        $dayId = $current['day']['id'] ?? null;
+
+        if (!$old) {
+            if ($dayId) {
+                $this->db->prepare("DELETE FROM attendance_days WHERE id = ?")->execute([$dayId]);
+            }
+        } else {
+            $fields = [$old['start_time'], $old['end_time'], (int) $old['total_work_seconds'], (int) $old['total_break_seconds'], $old['status']];
+            if ($dayId) {
+                $this->db->prepare("DELETE FROM time_actions WHERE attendance_day_id = ?")->execute([$dayId]);
+                $this->db->prepare("DELETE FROM breaks WHERE attendance_day_id = ?")->execute([$dayId]);
+                $this->db->prepare("
+                    UPDATE attendance_days
+                    SET start_time = ?, end_time = ?, total_work_seconds = ?, total_break_seconds = ?, status = ?, updated_at = NOW()
+                    WHERE id = ?
+                ")->execute([...$fields, $dayId]);
+            } else {
+                $this->db->prepare("
+                    INSERT INTO attendance_days (user_id, work_date, start_time, end_time, total_work_seconds, total_break_seconds, status)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                ")->execute([$userId, $date, ...$fields]);
+                $dayId = (int) $this->db->lastInsertId();
+            }
+            $ins = $this->db->prepare("INSERT INTO time_actions (attendance_day_id, user_id, action_type, action_time) VALUES (?, ?, ?, ?)");
+            foreach ($before['actions'] ?? [] as $a) {
+                $ins->execute([$dayId, $userId, $a['action_type'], $a['action_time']]);
+            }
+            $ins = $this->db->prepare("INSERT INTO breaks (attendance_day_id, user_id, start_time, end_time, duration_seconds) VALUES (?, ?, ?, ?, ?)");
+            foreach ($before['breaks'] ?? [] as $b) {
+                $ins->execute([$dayId, $userId, $b['start_time'], $b['end_time'], $b['duration_seconds']]);
+            }
+        }
+
+        // The undo is in the audit trail too, like any correction
+        $after = $this->getDay($userId, $date);
+        $this->db->prepare("
+            INSERT INTO time_corrections (user_id, work_date, edited_by, reason, before_json, after_json, report_id)
+            VALUES (?, ?, ?, ?, ?, ?, NULL)
+        ")->execute([
+            $userId, $date, (int) $editor['id'], self::undoReason($correctionId),
+            json_encode(self::snapshot($current)), json_encode(self::snapshot($after)),
+        ]);
+
+        // The agent's report goes back to open if this correction resolved it
+        if (!empty($p['report_id'])) {
+            $this->db->prepare("
+                UPDATE time_error_reports
+                SET status = 'OPEN', resolved_by = NULL, resolution_note = NULL, resolved_at = NULL
+                WHERE id = ? AND status = 'RESOLVED'
+            ")->execute([(int) $p['report_id']]);
+        }
+    }
+
+    /** Reason written to the audit trail for an undo (kept in English, like the stored data). */
+    public static function undoReason(int $correctionId): string
+    {
+        return 'Undo of correction #' . $correctionId;
     }
 
     private function checkPermission(array $editor, int $userId): void
@@ -258,7 +349,8 @@ class TimeCorrectionService
         }
     }
 
-    private function resolveReport(int $reportId, int $userId, string $date, int $editorId, string $reason): void
+    /** Returns true when this correction resolved the report (it was still open). */
+    private function resolveReport(int $reportId, int $userId, string $date, int $editorId, string $reason): bool
     {
         $stmt = $this->db->prepare("SELECT user_id, work_date, status FROM time_error_reports WHERE id = ?");
         $stmt->execute([$reportId]);
@@ -268,7 +360,9 @@ class TimeCorrectionService
         }
         if ($r['status'] === 'OPEN') {
             (new TimeErrorReportService())->resolve($reportId, $editorId, 'Times corrected: ' . $reason);
+            return true;
         }
+        return false;
     }
 
     /**

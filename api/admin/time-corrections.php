@@ -9,12 +9,14 @@
  * POST /api/admin/time-corrections.php
  *      {user_id, date, actions: [{action_type, action_time}], reason, report_id?}
  *      Replace the day's clock actions. report_id also resolves that agent report.
+ *      The answer has data.undo {token, seconds} for the "Undo" pop-up (api/admin/undo.php).
  */
 require_once __DIR__ . '/../../src/bootstrap.php';
 require_once ROOT_PATH . '/src/Services/TimeErrorService.php';
 require_once ROOT_PATH . '/src/Services/TimeCorrectionService.php';
 require_once ROOT_PATH . '/src/Services/LeaveService.php';
 require_once ROOT_PATH . '/src/Services/ScheduleService.php';
+require_once ROOT_PATH . '/src/Services/UndoService.php';
 
 $caller = AdminMiddleware::requireManager();
 
@@ -42,6 +44,9 @@ try {
             (string) ($input['reason'] ?? ''),
             !empty($input['report_id']) ? (int) $input['report_id'] : null
         );
+        $undoPayload = $result['undo_payload'];
+        unset($result['undo_payload']);
+        $result['undo'] = (new UndoService())->record($caller, 'time_correction', $undoPayload);
         Response::success('Times corrected.', $result);
     }
 

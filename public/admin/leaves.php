@@ -185,8 +185,8 @@ $pageScripts = <<<'HTML'
         $("l-list").querySelectorAll("[data-confirm]").forEach(b => b.addEventListener("click", async () => {
             const box = $("l-list").querySelector(`[data-cancel-box="${b.dataset.confirm}"]`);
             const r = await apiRequest(API, "POST", { action: "cancel", id: parseInt(b.dataset.confirm, 10), reason: box.querySelector("input").value });
-            showToast(r.message, r.success ? "success" : "error");
-            if (r.success) loadList();
+            if (r.success) { showUndoToast(r.message, r.data.undo, loadList); loadList(); }
+            else showToast(r.message, "error");
         }));
     }
 
@@ -218,8 +218,8 @@ $pageScripts = <<<'HTML'
             note: $("lv-note").value,
         });
         btn.disabled = false;
-        showToast(res.message, res.success ? "success" : "error");
-        if (res.success) { $("lv-note").value = ""; loadList(); }
+        if (res.success) { showUndoToast(res.message, res.data.undo, loadList); $("lv-note").value = ""; loadList(); }
+        else showToast(res.message, "error");
     });
 
     document.addEventListener("DOMContentLoaded", async () => {

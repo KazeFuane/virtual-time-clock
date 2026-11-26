@@ -7,10 +7,12 @@
  * POST /api/admin/leaves.php
  *      {user_id, leave_type, start_date, end_date?, day_part?, note?}   record leave
  *      {action: "cancel", id, reason?}                                  cancel a leave
+ *      Both answers have data.undo {token, seconds} for the "Undo" pop-up (api/admin/undo.php).
  */
 require_once __DIR__ . '/../../src/bootstrap.php';
 require_once ROOT_PATH . '/src/Services/TimeErrorService.php';
 require_once ROOT_PATH . '/src/Services/LeaveService.php';
+require_once ROOT_PATH . '/src/Services/UndoService.php';
 
 $caller = AdminMiddleware::requireManager();
 
@@ -24,7 +26,8 @@ try {
         $input = Validator::getJsonInput();
         if (($input['action'] ?? '') === 'cancel') {
             $leave = $service->cancel($caller, (int) ($input['id'] ?? 0), (string) ($input['reason'] ?? ''));
-            Response::success('Leave cancelled.', ['leave' => $leave]);
+            $undo = (new UndoService())->record($caller, 'leave_cancel', ['leave_id' => (int) $leave['id']]);
+            Response::success('Leave cancelled.', ['leave' => $leave, 'undo' => $undo]);
         }
         $leave = $service->create(
             $caller,
@@ -35,7 +38,8 @@ try {
             (string) ($input['day_part'] ?? 'FULL'),
             (string) ($input['note'] ?? '')
         );
-        Response::success('Leave recorded.', ['leave' => $leave], 201);
+        $undo = (new UndoService())->record($caller, 'leave_create', ['leave_id' => (int) $leave['id']]);
+        Response::success('Leave recorded.', ['leave' => $leave, 'undo' => $undo], 201);
     }
 
     if ($_SERVER['REQUEST_METHOD'] !== 'GET') {

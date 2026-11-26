@@ -8,6 +8,7 @@
  *                                  -> create account; returns the password once
  * PATCH {id, action: "reset_password", password?}  -> set/generate a new password; returns it once
  * PATCH {id, username?, first_name?, last_name?, email?, role_id?, is_active?} -> update account fields
+ *                                  (deactivating answers with data.undo {token, seconds}, see api/admin/undo.php)
  *
  * Passwords are only stored as bcrypt hashes. The plain-text password is
  * returned in the response of the create/reset call and never again.
@@ -148,6 +149,7 @@ if ($method === 'GET') {
     }
 
     try {
+        $wasActive = (int) $userService->getUserById($id)['is_active'] === 1;
         $userService->updateUser($id, $update);
 
         // Keep the admin's own session (header name, etc.) in sync after self-edits.
@@ -159,7 +161,14 @@ if ($method === 'GET') {
             }
         }
 
-        Response::success('Account updated successfully.', ['user' => $userService->getUserById($id)]);
+        // Deactivating an account can be undone for a few seconds (the "Undo" pop-up)
+        $undo = null;
+        if ($wasActive && isset($update['is_active']) && $update['is_active'] === 0) {
+            require_once ROOT_PATH . '/src/Services/UndoService.php';
+            $undo = (new UndoService())->record($admin, 'user_deactivate', ['user_id' => $id]);
+        }
+
+        Response::success('Account updated successfully.', ['user' => $userService->getUserById($id), 'undo' => $undo]);
     } catch (\PDOException $e) {
         if ($e->getCode() == 23000) {
             Response::error('That username or email is already registered.', 409);

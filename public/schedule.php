@@ -370,8 +370,8 @@ $pageScripts = <<<'HTML'
         const body = { action, user_ids: ids, from: $("d-from").value, to: $("d-to").value, note: $("d-note").value };
         if (action === "set_day") body.shifts = forced ?? readShifts();
         const res = await apiRequest(ADMIN_API, "POST", body);
-        showToast(res.message, res.success ? "success" : "error");
-        if (res.success) { closeModal(); reload(); }
+        if (res.success) { showUndoToast(res.message, res.data.undo, reload); closeModal(); reload(); }
+        else showToast(res.message, "error");
     }
 
     // ---------------- Assign a schedule ----------------
@@ -394,15 +394,18 @@ $pageScripts = <<<'HTML'
             ${hist}
         `, [[t("Assign"), BTNP, async () => {
             const res = await apiRequest(ADMIN_API, "POST", { action: "assign", user_ids: ids, template_id: +$("a-tpl").value, start_date: $("a-from").value });
-            showToast(res.message, res.success ? "success" : "error");
-            if (res.success) { closeModal(); reload(); }
+            if (res.success) { showUndoToast(res.message, res.data.undo, reload); closeModal(); reload(); }
+            else showToast(res.message, "error");
         }]]);
         const preview = () => { const t = data.templates.find(t => t.id === +$("a-tpl").value); $("a-preview").innerHTML = t ? weekSummary(t.week) : ""; };
         $("a-tpl").onchange = preview; preview();
         document.querySelectorAll("[data-unassign]").forEach(b => b.onclick = async () => {
             const res = await apiRequest(ADMIN_API, "POST", { action: "remove_assignment", id: +b.dataset.unassign });
-            showToast(res.message, res.success ? "success" : "error");
-            if (res.success) { await reload(); openAssign(ids); }
+            if (res.success) {
+                // After an undo, refresh the open window too
+                showUndoToast(res.message, res.data.undo, async () => { await reload(); if (document.querySelector("[data-unassign]")) openAssign(ids); });
+                await reload(); openAssign(ids);
+            } else showToast(res.message, "error");
         });
     }
 

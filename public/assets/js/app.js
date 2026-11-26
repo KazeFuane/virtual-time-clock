@@ -95,6 +95,74 @@ function showToast(message, type = 'info', duration = 4000) {
     }, duration);
 }
 
+// "Undo" pop-up after a manager/admin change (see api/admin/undo.php).
+// undo = data.undo from the API answer: {token, seconds}. Without it this
+// is a plain success toast. onUndone() runs after a successful undo, to
+// reload the page's data. The countdown pauses while the mouse is over it.
+const UNDO_API = '/virtual-time-clock/api/admin/undo.php';
+function showUndoToast(message, undo, onUndone) {
+    if (!undo || !undo.token) { showToast(message, 'success'); return; }
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    const total = (undo.seconds || 10) * 1000;
+    let left = total;
+    let last = Date.now();
+    let paused = false;
+    let done = false;
+
+    const toast = document.createElement('div');
+    toast.setAttribute('role', 'status');
+    toast.className = 'pointer-events-auto relative overflow-hidden flex items-center gap-3 ps-4 pe-3 py-3 rounded-lg text-sm shadow-xl border bg-[#102419] border-emerald-800 text-emerald-200 transform transition-all duration-300 translate-y-[-10px] opacity-0 max-w-sm';
+    toast.innerHTML = `<svg class="w-5 h-5 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        <div class="flex-1 min-w-0" data-undo-msg></div>
+        <button type="button" data-undo-btn class="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-purple-400 disabled:opacity-60">
+            <svg class="w-3.5 h-3.5 rtl:-scale-x-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a5 5 0 015 5v2M3 10l5-5M3 10l5 5"/></svg>
+            <span>${t('Undo')}</span>
+            <span class="font-mono opacity-80" data-undo-count></span>
+        </button>
+        <div class="absolute bottom-0 start-0 h-0.5 bg-emerald-500/70" data-undo-bar style="width:100%"></div>`;
+    toast.querySelector('[data-undo-msg]').textContent = message;
+    const btn = toast.querySelector('[data-undo-btn]');
+    const count = toast.querySelector('[data-undo-count]');
+    const bar = toast.querySelector('[data-undo-bar]');
+    container.appendChild(toast);
+    requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-[-10px]', 'opacity-0');
+        toast.classList.add('translate-y-0', 'opacity-100');
+    });
+
+    const close = () => {
+        if (done) return;
+        done = true;
+        clearInterval(timer);
+        toast.classList.add('opacity-0', 'translate-y-[-10px]');
+        setTimeout(() => toast.remove(), 300);
+    };
+    const tick = () => {
+        const now = Date.now();
+        if (!paused) left -= now - last;
+        last = now;
+        if (left <= 0) { close(); return; }
+        count.textContent = Math.ceil(left / 1000) + 's';
+        bar.style.width = (left / total * 100) + '%';
+    };
+    const timer = setInterval(tick, 100);
+    tick();
+    toast.addEventListener('mouseenter', () => { paused = true; });
+    toast.addEventListener('mouseleave', () => { paused = false; });
+
+    btn.addEventListener('click', async () => {
+        if (done) return;
+        btn.disabled = true;
+        paused = true;
+        const res = await apiRequest(UNDO_API, 'POST', { token: undo.token });
+        close();
+        showToast(res.message, res.success ? 'info' : 'error');
+        if (res.success && typeof onUndone === 'function') onUndone(res);
+    });
+}
+
 // User Menu Dropdown & Logout
 document.addEventListener('DOMContentLoaded', () => {
     const userMenuBtn = document.getElementById('user-menu-btn');
@@ -132,4 +200,22 @@ document.addEventListener('DOMContentLoaded', () => {
             sidebar.classList.toggle('rtl:translate-x-full');
         });
     }
+});
+
+// "Coming soon" pop-up for a button whose feature is not built yet.
+// Put data-coming-soon on the button (optionally with the feature's English
+// name as its value, e.g. data-coming-soon="Export to PDF") and clicking it
+// shows a friendly pop-up instead of doing nothing.
+function showComingSoon(feature) {
+    const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const msg = feature
+        ? t('{name} is coming soon. We are still building it.', { name: esc(t(feature)) })
+        : t('This feature is coming soon. We are still building it.');
+    showToast(`<span class="font-semibold">${t('Coming soon')}</span> &middot; ${msg}`, 'warning');
+}
+document.addEventListener('click', (e) => {
+    const el = e.target.closest('[data-coming-soon]');
+    if (!el) return;
+    e.preventDefault();
+    showComingSoon(el.getAttribute('data-coming-soon'));
 });

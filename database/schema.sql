@@ -7,6 +7,7 @@
 -- =============================================================
 
 -- Drop tables in reverse FK dependency order
+DROP TABLE IF EXISTS `undo_actions`;
 DROP TABLE IF EXISTS `schedule_overrides`;
 DROP TABLE IF EXISTS `schedule_assignments`;
 DROP TABLE IF EXISTS `schedule_templates`;
@@ -301,5 +302,26 @@ CREATE TABLE IF NOT EXISTS `user_preferences` (
     PRIMARY KEY (`user_id`, `pref_key`),
     CONSTRAINT `fk_user_prefs_user`
         FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+        ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================================
+-- UNDO ACTIONS (10-second "Undo" pop-up after manager/admin changes)
+-- =============================================================
+CREATE TABLE IF NOT EXISTS `undo_actions` (
+    `id`           INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `token`        CHAR(32)     NOT NULL                 COMMENT 'Random id sent to the page',
+    `actor_id`     INT UNSIGNED NOT NULL                 COMMENT 'Manager/admin who made the change (only they can undo it)',
+    `kind`         VARCHAR(40)  NOT NULL                 COMMENT 'time_correction, leave_create, leave_cancel, schedule, user_deactivate',
+    `payload_json` MEDIUMTEXT   NOT NULL                 COMMENT 'What to put back',
+    `created_at`   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `expires_at`   DATETIME     NOT NULL,
+    `undone_at`    DATETIME     NULL,
+
+    UNIQUE KEY `uk_undo_token`   (`token`),
+    INDEX      `idx_undo_expires` (`expires_at`),
+
+    CONSTRAINT `fk_undo_actor`
+        FOREIGN KEY (`actor_id`) REFERENCES `users` (`id`)
         ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

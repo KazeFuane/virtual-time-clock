@@ -271,6 +271,50 @@ class LeaveService
         return $this->get($id);
     }
 
+    /**
+     * Undo "Record leave" (the "Undo" pop-up, see UndoService): the leave
+     * was recorded by mistake a few seconds ago, so it is removed outright.
+     */
+    public function undoCreate(array $editor, int $id): void
+    {
+        $leave = $this->get($id);
+        if (!$leave) {
+            throw new RuntimeException('Leave not found.');
+        }
+        $this->checkPermission($editor, (int) $leave['user_id']);
+        if ($leave['cancelled_at']) {
+            throw new RuntimeException('This leave was cancelled since. Undo is not possible.');
+        }
+        $this->db->prepare("DELETE FROM leaves WHERE id = ?")->execute([$id]);
+    }
+
+    /**
+     * Undo "Cancel leave": the leave is active again, unless other leave was
+     * recorded on the same days since.
+     */
+    public function undoCancel(array $editor, int $id): void
+    {
+        $leave = $this->get($id);
+        if (!$leave) {
+            throw new RuntimeException('Leave not found.');
+        }
+        $this->checkPermission($editor, (int) $leave['user_id']);
+        if (!$leave['cancelled_at']) {
+            throw new RuntimeException('This leave is already active.');
+        }
+        $stmt = $this->db->prepare("
+            SELECT day_part FROM leaves
+            WHERE user_id = ? AND id <> ? AND cancelled_at IS NULL AND end_date >= ? AND start_date <= ?");
+        $stmt->execute([(int) $leave['user_id'], $id, $leave['start_date'], $leave['end_date']]);
+        foreach ($stmt->fetchAll(PDO::FETCH_COLUMN) as $part) {
+            if ($part === 'FULL' || $leave['day_part'] === 'FULL' || $part === $leave['day_part']) {
+                throw new RuntimeException('Other leave was recorded on these days since. Undo is not possible.');
+            }
+        }
+        $this->db->prepare("UPDATE leaves SET cancelled_at = NULL, cancelled_by = NULL, cancel_reason = NULL WHERE id = ?")
+            ->execute([$id]);
+    }
+
     public function get(int $id): ?array
     {
         $stmt = $this->db->prepare("

@@ -370,7 +370,9 @@ function initUserManagement() {
             const activate = !Number(user.is_active);
             if (!activate && !confirm(t("Deactivate @{username}? They will no longer be able to sign in.", { username: user.username }))) return;
             const res = await apiRequest("/virtual-time-clock/api/admin/users.php", "PATCH", {id: user.id, is_active: activate ? 1 : 0});
-            showToast(res.success ? (activate ? t("Account activated") : t("Account deactivated")) : res.message, res.success ? "success" : "error");
+            if (!res.success) showToast(res.message, "error");
+            else if (activate) showToast(t("Account activated"), "success");
+            else showUndoToast(t("Account deactivated"), res.data.undo, () => { loadUsers(); loadAdminAttendance(); });
             if (res.success) loadUsers();
         }
     });
@@ -397,7 +399,8 @@ function initUserManagement() {
 
         const res = await apiRequest("/virtual-time-clock/api/admin/users.php", "PATCH", payload);
         if (res.success) {
-            showToast(t("Account updated"), "success");
+            // Deactivated from this form: the pop-up offers to undo that
+            showUndoToast(res.data.undo ? t("Account updated and deactivated") : t("Account updated"), res.data.undo, () => { loadUsers(); loadAdminAttendance(); });
             document.getElementById("modal-edit-user").classList.add("hidden");
             loadUsers();
             loadAdminAttendance();

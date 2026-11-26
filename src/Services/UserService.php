@@ -170,6 +170,22 @@ class UserService
     }
 
     /**
+     * Undo "Deactivate" (the "Undo" pop-up, see UndoService): the account
+     * can sign in again. Runs inside UndoService's transaction.
+     */
+    public function undoDeactivate(int $id): void
+    {
+        $user = $this->getUserById($id);
+        if (!$user) {
+            throw new RuntimeException('User not found.');
+        }
+        if ((int) $user['is_active'] === 1) {
+            throw new RuntimeException('This account is already active.');
+        }
+        $this->db->prepare("UPDATE users SET is_active = 1 WHERE id = ?")->execute([$id]);
+    }
+
+    /**
      * Set a new password for a user (stored as a bcrypt hash only).
      */
     public function resetPassword(int $id, string $newPassword): void
