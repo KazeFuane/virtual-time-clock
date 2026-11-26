@@ -27,15 +27,11 @@ if ($currentUser) {
             $page(t('Plan Schedules'), "$base/schedule.php", 'plan schedules shifts team roster ' . t('plan schedules shifts team roster')),
         );
     }
-    array_push($searchPages,
-        $page(t('Quality Knowledge'), "$base/placeholder.php?module=Quality%20Knowledge"),
-        $page(t('Quality Grid'), "$base/placeholder.php?module=Quality%20Grid"),
-        $page(t('Communication'), "$base/placeholder.php?module=Communication"),
-        $page(t('Back Office Tools'), "$base/placeholder.php?module=Back%20Office%20Tools"),
-        $page(t('Production Monitoring'), "$base/placeholder.php?module=Production%20Monitoring"),
-        $page(t('Help'), "$base/placeholder.php?module=Help", 'help support ' . t('help support')),
-        $page(t('Privacy & Compliance'), "$base/placeholder.php?module=Privacy%20%26%20Compliance"),
-    );
+    // Features not built yet open their "Coming soon" page and are tagged "Soon"
+    foreach (ComingSoon::features() as $name => $info) {
+        $words = $name === 'Help' ? 'help support ' . t('help support') : '';
+        $searchPages[] = $page(t($name), ComingSoon::url($name), $words . ' soon ' . t('Soon') . ' ' . t('Coming soon')) + ['soon' => true];
+    }
 }
 ?>
 <header class="h-14 border-b border-[#261936] bg-[#140c1d] px-4 md:px-6 flex items-center justify-between shrink-0">
@@ -78,6 +74,7 @@ if ($currentUser) {
         (function () {
             const PAGES = <?= json_encode($searchPages, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
             const PEOPLE = <?= $searchPeople ? 'true' : 'false' ?>;
+            const SOON = <?= json_encode(ComingSoon::badge(), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
             const API = "/virtual-time-clock/api/search.php";
             const BASE = "/virtual-time-clock/public";
             const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -146,7 +143,7 @@ if ($currentUser) {
                 html += pages.length
                     ? `<div class="px-1 pb-1">` + pages.map(p => `<div data-gs-item data-url="${esc(p.url)}" class="${ROW} items-center" role="option">
                             <span class="text-gray-200 truncate">${esc(p.label)}</span>
-                            <svg class="w-3.5 h-3.5 text-gray-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                            ${p.soon ? SOON : `<svg class="w-3.5 h-3.5 text-gray-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>`}
                         </div>`).join("") + `</div>`
                     : PEOPLE ? "" : `<div class="px-3 pb-2.5 pt-1 text-gray-500">${esc(t("No pages found."))}</div>`;
                 panel.innerHTML = html;

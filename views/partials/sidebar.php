@@ -68,30 +68,30 @@ $isPlanner = !empty($currentUser) && in_array($currentUser['role'], ['administra
                 </div>
             </div>
 
-            <!-- Future Modules Placeholders -->
-            <a href="/virtual-time-clock/public/placeholder.php?module=Quality%20Knowledge" class="flex items-center justify-between px-3 py-2.5 rounded-lg <?= $navActive('/virtual-time-clock/public/placeholder.php?module=Quality%20Knowledge') ? $activeClass : 'text-gray-300 hover:bg-[#221530] hover:text-white' ?> transition">
-                <span><?= t('Quality Knowledge') ?></span>
-                <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            <!-- Features not built yet: "Soon" badge, they open a Coming soon page (see src/Helpers/ComingSoon.php) -->
+            <a href="<?= htmlspecialchars(ComingSoon::url('Quality Knowledge')) ?>" class="flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg <?= $navActive(ComingSoon::url('Quality Knowledge')) ? $activeClass : 'text-gray-400 hover:bg-[#221530] hover:text-white' ?> transition" title="<?= t('Coming soon') ?>">
+                <span class="truncate"><?= t('Quality Knowledge') ?></span>
+                <?= ComingSoon::badge() ?>
             </a>
 
-            <a href="/virtual-time-clock/public/placeholder.php?module=Quality%20Grid" class="flex items-center justify-between px-3 py-2.5 rounded-lg <?= $navActive('/virtual-time-clock/public/placeholder.php?module=Quality%20Grid') ? $activeClass : 'text-gray-300 hover:bg-[#221530] hover:text-white' ?> transition">
-                <span><?= t('Quality Grid') ?></span>
-                <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            <a href="<?= htmlspecialchars(ComingSoon::url('Quality Grid')) ?>" class="flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg <?= $navActive(ComingSoon::url('Quality Grid')) ? $activeClass : 'text-gray-400 hover:bg-[#221530] hover:text-white' ?> transition" title="<?= t('Coming soon') ?>">
+                <span class="truncate"><?= t('Quality Grid') ?></span>
+                <?= ComingSoon::badge() ?>
             </a>
 
-            <a href="/virtual-time-clock/public/placeholder.php?module=Communication" class="flex items-center justify-between px-3 py-2.5 rounded-lg <?= $navActive('/virtual-time-clock/public/placeholder.php?module=Communication') ? $activeClass : 'text-gray-300 hover:bg-[#221530] hover:text-white' ?> transition">
-                <span><?= t('Communication') ?></span>
-                <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            <a href="<?= htmlspecialchars(ComingSoon::url('Communication')) ?>" class="flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg <?= $navActive(ComingSoon::url('Communication')) ? $activeClass : 'text-gray-400 hover:bg-[#221530] hover:text-white' ?> transition" title="<?= t('Coming soon') ?>">
+                <span class="truncate"><?= t('Communication') ?></span>
+                <?= ComingSoon::badge() ?>
             </a>
 
-            <a href="/virtual-time-clock/public/placeholder.php?module=Back%20Office%20Tools" class="flex items-center justify-between px-3 py-2.5 rounded-lg <?= $navActive('/virtual-time-clock/public/placeholder.php?module=Back%20Office%20Tools') ? $activeClass : 'text-gray-300 hover:bg-[#221530] hover:text-white' ?> transition">
-                <span><?= t('Back Office Tools') ?></span>
-                <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            <a href="<?= htmlspecialchars(ComingSoon::url('Back Office Tools')) ?>" class="flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg <?= $navActive(ComingSoon::url('Back Office Tools')) ? $activeClass : 'text-gray-400 hover:bg-[#221530] hover:text-white' ?> transition" title="<?= t('Coming soon') ?>">
+                <span class="truncate"><?= t('Back Office Tools') ?></span>
+                <?= ComingSoon::badge() ?>
             </a>
 
-            <a href="/virtual-time-clock/public/placeholder.php?module=Production%20Monitoring" class="flex items-center justify-between px-3 py-2.5 rounded-lg <?= $navActive('/virtual-time-clock/public/placeholder.php?module=Production%20Monitoring') ? $activeClass : 'text-gray-300 hover:bg-[#221530] hover:text-white' ?> transition">
-                <span><?= t('Production Monitoring') ?></span>
-                <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            <a href="<?= htmlspecialchars(ComingSoon::url('Production Monitoring')) ?>" class="flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg <?= $navActive(ComingSoon::url('Production Monitoring')) ? $activeClass : 'text-gray-400 hover:bg-[#221530] hover:text-white' ?> transition" title="<?= t('Coming soon') ?>">
+                <span class="truncate"><?= t('Production Monitoring') ?></span>
+                <?= ComingSoon::badge() ?>
             </a>
 
             <?php if (!empty($currentUser) && in_array($currentUser['role'], ['administrator', 'manager'])): ?>
@@ -121,13 +121,15 @@ $isPlanner = !empty($currentUser) && in_array($currentUser['role'], ['administra
         <!-- Sidebar Bottom Items -->
         <div class="p-3 border-t border-[#261936] text-xs space-y-2 text-gray-400">
             <div class="flex items-center gap-4 px-2">
-                <a href="/virtual-time-clock/public/placeholder.php?module=Help" class="flex items-center gap-1.5 hover:text-white transition">
+                <a href="<?= htmlspecialchars(ComingSoon::url('Help')) ?>" class="flex items-center gap-1.5 hover:text-white transition" title="<?= t('Coming soon') ?>">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                     <?= t('Help') ?>
+                    <span class="w-1.5 h-1.5 rounded-full bg-amber-400" aria-hidden="true"></span>
                 </a>
-                <a href="/virtual-time-clock/public/placeholder.php?module=Privacy%20%26%20Compliance" class="flex items-center gap-1.5 hover:text-white transition">
+                <a href="<?= htmlspecialchars(ComingSoon::url('Privacy & Compliance')) ?>" class="flex items-center gap-1.5 hover:text-white transition" title="<?= t('Coming soon') ?>">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
                     <?= t('Privacy & Compliance') ?>
+                    <span class="w-1.5 h-1.5 rounded-full bg-amber-400" aria-hidden="true"></span>
                 </a>
             </div>
             <div class="px-2 text-[11px] text-gray-500">

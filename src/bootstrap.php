@@ -27,7 +27,10 @@ if (session_status() === PHP_SESSION_NONE) {
         'lifetime' => SESSION_LIFETIME,
         'path'     => '/',
         'domain'   => '',
-        'secure'   => false,  // Set to true in production with HTTPS
+        // Cookie only sent over HTTPS when the site is served over HTTPS
+        // (local http://localhost keeps working)
+        'secure'   => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+                      || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https'),
         'httponly'  => true,
         'samesite'  => 'Strict',
     ]);
@@ -64,6 +67,7 @@ spl_autoload_register(function (string $className): void {
         'Response'          => ROOT_PATH . '/src/Helpers/Response.php',
         'Validator'         => ROOT_PATH . '/src/Helpers/Validator.php',
         'TimeHelper'        => ROOT_PATH . '/src/Helpers/TimeHelper.php',
+        'ComingSoon'        => ROOT_PATH . '/src/Helpers/ComingSoon.php',
     ];
 
     if (isset($classMap[$className])) {
