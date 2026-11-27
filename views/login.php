@@ -4,7 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#140c1d">
     <title><?= t('Sign In') ?> &mdash; <?= htmlspecialchars(APP_NAME) ?></title>
+    <?php include ROOT_PATH . '/views/partials/favicon.php'; ?>
     <meta name="csrf-token" content="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
     <?= Lang::jsScript() ?>
     <!-- Tailwind CSS CDN -->
@@ -19,7 +21,7 @@
     <?php if (Lang::dir() === 'rtl'): ?><link rel="stylesheet" href="/virtual-time-clock/public/assets/css/rtl.css"><?php endif; ?>
     <script src="/virtual-time-clock/public/assets/js/theme.js"></script>
 </head>
-<body class="h-full flex items-center justify-center p-4">
+<body class="min-h-full flex items-center justify-center px-4 pt-20 pb-6 sm:p-4">
     <!-- Light / dark mode switch -->
     <button type="button" data-theme-toggle class="fixed top-4 end-4 p-2 rounded-lg border border-[#281b3b] bg-[#140c1d] text-gray-400 hover:text-white hover:bg-[#221530] transition focus:outline-none" title="<?= t('Switch to light mode') ?>" aria-label="<?= t('Switch to light mode') ?>" data-label-light="<?= t('Switch to light mode') ?>" data-label-dark="<?= t('Switch to dark mode') ?>">
         <svg data-theme-icon="sun" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>

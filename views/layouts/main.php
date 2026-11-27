@@ -3,8 +3,10 @@
 <html lang="<?= htmlspecialchars(Lang::current()) ?>" dir="<?= Lang::dir() ?>" class="h-full bg-[#0d0914] text-gray-200 <?= ThemeHelper::htmlClass() ?>">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#140c1d">
     <title><?= htmlspecialchars($pageTitle ?? APP_NAME) ?></title>
+    <?php include ROOT_PATH . '/views/partials/favicon.php'; ?>
     <meta name="csrf-token" content="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
     <?= Lang::jsScript() ?>
     <!-- Tailwind CSS CDN -->
@@ -51,19 +53,21 @@
         ::-webkit-scrollbar-thumb { background: #281d38; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #3b2a54; }
     </style>
+    <link rel="stylesheet" href="/virtual-time-clock/public/assets/css/mobile.css">
     <link rel="stylesheet" href="/virtual-time-clock/public/assets/css/theme-light.css">
     <?php if (Lang::dir() === 'rtl'): ?><link rel="stylesheet" href="/virtual-time-clock/public/assets/css/rtl.css"><?php endif; ?>
     <script src="/virtual-time-clock/public/assets/js/theme.js"></script>
 </head>
 <body class="h-full flex overflow-hidden antialiased">
     <!-- Toast notifications -->
-    <div id="toast-container" class="fixed top-5 end-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+    <div id="toast-container" class="fixed top-3 inset-x-3 sm:inset-x-auto sm:top-5 sm:end-5 z-[60] flex flex-col gap-2 pointer-events-none"></div>
 
-    <!-- Sidebar -->
+    <!-- Sidebar (a slide-in menu on phones and tablets, see assets/css/mobile.css) -->
+    <div id="sidebar-backdrop" class="fixed inset-0 bg-black/60 z-40 hidden" aria-hidden="true"></div>
     <?php include ROOT_PATH . '/views/partials/sidebar.php'; ?>
 
     <!-- Main Content Area -->
-    <div class="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#0d0914]">
+    <div id="app-main" class="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#0d0914]">
         <!-- Header -->
         <?php include ROOT_PATH . '/views/partials/header.php'; ?>
 
