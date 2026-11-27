@@ -112,28 +112,29 @@ ob_start();
 
     <!-- Attendance Action Buttons (Matching Screenshot Colors & Order) -->
     <!-- Green (Start Workday) | Red (End Workday) | Purple (Start Break) | Orange (End Break) -->
-    <div class="flex flex-wrap items-center justify-center gap-3 sm:gap-4 pt-2 pb-8">
+    <!-- Phones: a 2 x 2 grid of large buttons, easy to hit with a thumb -->
+    <div class="grid grid-cols-2 gap-3 w-full max-w-md mx-auto sm:max-w-none sm:flex sm:flex-wrap sm:items-center sm:justify-center sm:gap-4 pt-2 pb-8">
         <!-- Start Workday (Green) -->
-        <button id="btn-start-work" type="button" class="flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-xs sm:text-sm text-white bg-emerald-600 hover:bg-emerald-500 shadow-lg shadow-emerald-950/40 transition">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
+        <button id="btn-start-work" type="button" class="flex items-center justify-center gap-2 min-h-[56px] sm:min-h-0 px-3 sm:px-5 py-3 sm:py-2.5 rounded-xl sm:rounded-lg font-semibold text-sm text-white bg-emerald-600 hover:bg-emerald-500 shadow-lg shadow-emerald-950/40 transition">
+            <svg class="w-5 h-5 sm:w-4 sm:h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
             <span><?= t('Start Workday') ?></span>
         </button>
 
         <!-- End Workday (Red) -->
-        <button id="btn-end-work" type="button" class="flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-xs sm:text-sm text-white bg-rose-600 hover:bg-rose-500 shadow-lg shadow-rose-950/40 transition">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+        <button id="btn-end-work" type="button" class="flex items-center justify-center gap-2 min-h-[56px] sm:min-h-0 px-3 sm:px-5 py-3 sm:py-2.5 rounded-xl sm:rounded-lg font-semibold text-sm text-white bg-rose-600 hover:bg-rose-500 shadow-lg shadow-rose-950/40 transition">
+            <svg class="w-5 h-5 sm:w-4 sm:h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
             <span><?= t('End Workday') ?></span>
         </button>
 
         <!-- Start Break (Purple / Violet) -->
-        <button id="btn-start-break" type="button" class="flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-xs sm:text-sm text-white bg-purple-700 hover:bg-purple-600 shadow-lg shadow-purple-950/40 transition">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <button id="btn-start-break" type="button" class="flex items-center justify-center gap-2 min-h-[56px] sm:min-h-0 px-3 sm:px-5 py-3 sm:py-2.5 rounded-xl sm:rounded-lg font-semibold text-sm text-white bg-purple-700 hover:bg-purple-600 shadow-lg shadow-purple-950/40 transition">
+            <svg class="w-5 h-5 sm:w-4 sm:h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             <span><?= t('Start Break') ?></span>
         </button>
 
         <!-- End Break (Orange / Amber) -->
-        <button id="btn-end-break" type="button" class="flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-xs sm:text-sm text-white bg-amber-600 hover:bg-amber-500 shadow-lg shadow-amber-950/40 transition">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+        <button id="btn-end-break" type="button" class="flex items-center justify-center gap-2 min-h-[56px] sm:min-h-0 px-3 sm:px-5 py-3 sm:py-2.5 rounded-xl sm:rounded-lg font-semibold text-sm text-white bg-amber-600 hover:bg-amber-500 shadow-lg shadow-amber-950/40 transition">
+            <svg class="w-5 h-5 sm:w-4 sm:h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
             <span><?= t('End Break') ?></span>
         </button>
     </div>

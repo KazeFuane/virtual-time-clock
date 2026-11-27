@@ -737,5 +737,12 @@ return [
         'A live view of who is working, on break or offline, and how the day is going.' => 'Une vue en direct de qui travaille, est en pause ou hors ligne, et du déroulement de la journée.',
         'Step-by-step guides and answers to common questions about the time clock.' => 'Des guides pas à pas et des réponses aux questions fréquentes sur la pointeuse.',
         'How ClockWise stores and protects your time records, and your rights over them.' => 'Comment ClockWise conserve et protège vos relevés de temps, et vos droits sur ces données.',
+
+        // Phone layout (menu and search buttons)
+        'Menu' => 'Menu',
+        'Open menu' => 'Ouvrir le menu',
+        'Close menu' => 'Fermer le menu',
+        'Account menu' => 'Menu du compte',
+        'Search' => 'Rechercher',
     ],
 ];

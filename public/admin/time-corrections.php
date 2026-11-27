@@ -178,14 +178,14 @@ $pageScripts = <<<'HTML'
     // them (even a half-typed time) stays as it is.
     function rowElement(r) {
         const div = document.createElement("div");
-        div.className = "flex items-center gap-2";
+        div.className = "flex flex-wrap sm:flex-nowrap items-center gap-2";
         div.innerHTML = `
             <span data-num class="w-6 text-end text-[11px] text-gray-500 font-mono"></span>
-            <select class="bg-[#1a1226] border border-[#2d1e44] text-xs text-gray-200 rounded-lg px-2 py-1.5 w-40">
+            <select class="w-[calc(100%-2rem)] sm:w-40 bg-[#1a1226] border border-[#2d1e44] text-xs text-gray-200 rounded-lg px-2 py-2 sm:py-1.5">
                 ${Object.keys(LABEL).map(k => `<option value="${k}" ${k === r.action_type ? "selected" : ""}>${LABEL[k]}</option>`).join("")}
             </select>
-            <input type="time" value="${esc(r.action_time)}" class="bg-[#1a1226] border border-[#2d1e44] text-xs font-mono text-gray-200 rounded-lg px-2 py-1.5">
-            <button type="button" class="px-2 py-1 rounded text-red-400 hover:bg-red-950 text-xs" title="${t("Remove line")}">&times;</button>
+            <input type="time" value="${esc(r.action_time)}" class="flex-1 min-w-0 sm:flex-none ms-8 sm:ms-0 bg-[#1a1226] border border-[#2d1e44] text-xs font-mono text-gray-200 rounded-lg px-2 py-1.5">
+            <button type="button" class="w-10 h-10 sm:w-auto sm:h-auto sm:px-2 sm:py-1 shrink-0 rounded text-red-400 hover:bg-red-950 text-lg sm:text-xs" title="${t("Remove line")}" aria-label="${t("Remove line")}">&times;</button>
             <span data-changed class="text-[10px] text-amber-300 ${r.changed ? "" : "hidden"}">${t("changed")}</span>`;
         const sel = div.querySelector("select"), inp = div.querySelector("input");
         const update = () => {

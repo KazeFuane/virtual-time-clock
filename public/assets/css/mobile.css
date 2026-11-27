@@ -1,0 +1,141 @@
+/*
+ * ClockWise - phones and tablets
+ * Layout rules that Tailwind classes alone can't express: the slide-in menu,
+ * the phone search bar, and a few touch-friendly defaults. Colors stay in
+ * the Tailwind classes, so light mode (theme-light.css) and right-to-left
+ * languages (rtl.css) keep working without extra rules here.
+ */
+
+/* ---------- Slide-in menu (below 1024px wide) ---------- */
+@media (max-width: 1023.98px) {
+    #app-sidebar {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        inset-inline-start: 0;
+        width: min(18rem, 85vw);
+        z-index: 50;
+        transform: translateX(-100%);
+        visibility: hidden;
+        transition: transform .25s ease, visibility 0s linear .25s;
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+    [dir="rtl"] #app-sidebar { transform: translateX(100%); }
+    html.sidebar-open #app-sidebar {
+        transform: none;
+        visibility: visible;
+        transition: transform .25s ease, visibility 0s;
+        box-shadow: 0 0 40px rgba(0, 0, 0, .45);
+    }
+    html.sidebar-open #sidebar-backdrop { display: block; }
+    html.sidebar-open, html.sidebar-open body { overflow: hidden !important; }
+}
+/* The whole page scrolls (not just the content area), so the browser bar
+   can hide while scrolling and tapping the top of the screen scrolls up.
+   The header stays pinned at the top. */
+@media (max-width: 1023.98px) {
+    /* !important: these must beat the h-full / overflow-hidden classes on <html> and <body> */
+    html, body { height: auto !important; min-height: 100%; }
+    body { display: block !important; overflow: visible !important; }
+    #app-main { overflow: visible; min-height: 100vh; min-height: 100dvh; }
+    #app-main > header { position: sticky; top: 0; z-index: 30; }
+    #app-main > main { overflow: visible; }
+}
+@media (prefers-reduced-motion: reduce) {
+    #app-sidebar { transition: none !important; }
+}
+
+/* ---------- Phones (below 640px wide) ---------- */
+@media (max-width: 639.98px) {
+    /* 16px text in form fields stops iPhones from zooming in when tapped */
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea { font-size: 16px !important; }
+
+    /* Search bar opened with the header's search button: full width under the header */
+    #gs-root.gs-mobile-open {
+        display: block;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        z-index: 45;
+        padding: .5rem .75rem .75rem;
+        background: inherit;
+        border-bottom: 1px solid #261936;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, .35);
+    }
+    #gs-root.gs-mobile-open #gs-input { width: 100%; padding-top: .6rem; padding-bottom: .6rem; }
+    #gs-root.gs-mobile-open > svg { top: 1.25rem; inset-inline-end: 1.5rem; }
+    #gs-root.gs-mobile-open #gs-panel { position: static; width: 100%; max-width: none; max-height: 65vh; margin-top: .5rem; }
+    #gs-root.gs-mobile-open #gs-panel [data-gs-item] { padding-top: .7rem; padding-bottom: .7rem; }
+    html.theme-light #gs-root.gs-mobile-open { border-bottom-color: #e4def0; box-shadow: 0 10px 20px rgba(28, 22, 48, .12); }
+
+    /* Form fields never push past the edge of their card or pop-up */
+    input, select, textarea { min-width: 0; max-width: 100%; }
+    .fixed.inset-0 .flex > input { flex: 1 1 0%; }
+
+    /* Close (x) buttons of pop-ups are big enough to tap */
+    button[data-close] { min-width: 2.5rem; min-height: 2.5rem; font-size: 1.4rem; line-height: 1; }
+
+    /* Pop-ups (modals) fill the screen width and scroll inside */
+    .fixed.inset-0 > .max-w-md, .fixed.inset-0 > .max-w-lg, .fixed.inset-0 > .max-w-xl, .fixed.inset-0 > .max-w-2xl { max-height: calc(100dvh - 2rem); overflow-y: auto; }
+
+    /* Breadcrumb: rtl.css shows its arrows as inline-block, keep them hidden on phones */
+    [dir="rtl"] .rtl-flip.hidden { display: none; }
+
+    /* Toasts span the screen */
+    #toast-container > * { max-width: none; }
+}
+
+/* Wide tables scroll sideways inside their card instead of stretching the page */
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* No grey flash when tapping links and buttons on phones */
+a, button, [role="button"], label { -webkit-tap-highlight-color: transparent; }
+button, a, [role="button"] { touch-action: manipulation; }
+
+/* Keep content clear of the iPhone home bar */
+main { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
+
+/* ---------- Tables that turn into cards on phones ----------
+   Add the class "stack-sm" to a <table>: below 640px each row becomes a
+   card and every cell shows its column name (copied from the table head by
+   app.js into data-label). data-label="" on a cell hides its name. */
+@media (max-width: 639.98px) {
+    table.stack-sm, table.stack-sm > tbody { display: block; width: 100%; }
+    table.stack-sm > thead { display: none; }
+    table.stack-sm > tbody > tr:not(.hidden) { display: block; padding: .85rem 1rem; }
+    table.stack-sm > tbody > tr > td {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: .3rem 0 !important;
+        text-align: end;
+        white-space: normal;
+        border: 0;
+    }
+    table.stack-sm > tbody > tr > td::before {
+        content: attr(data-label);
+        flex-shrink: 0;
+        max-width: 50%;
+        text-align: start;
+        font-family: 'Inter', 'Noto Sans Arabic', system-ui, sans-serif;
+        font-size: 11px;
+        font-weight: 500;
+        color: #8b84a0;
+    }
+    table.stack-sm > tbody > tr > td[data-label=""]::before { display: none; }
+    table.stack-sm > tbody > tr > td[data-label=""] { justify-content: flex-start; flex-wrap: wrap; text-align: start; }
+    /* First cell (usually the name) is the card's title */
+    table.stack-sm > tbody > tr > td:first-child:not([colspan]) { display: block; text-align: start; padding-bottom: .45rem !important; font-size: 14px; }
+    table.stack-sm > tbody > tr > td:first-child:not([colspan])::before { display: none; }
+    /* Empty / loading messages and expandable detail rows span the card */
+    table.stack-sm > tbody > tr > td[colspan] { display: block; text-align: center; }
+    table.stack-sm > tbody > tr > td[colspan]::before { display: none; }
+    table.stack-sm td[colspan] table, table.stack-sm td[colspan] table tbody { display: block; }
+    table.stack-sm td[colspan] table tr { display: flex; flex-wrap: wrap; gap: .15rem .75rem; padding: .45rem 0; border-bottom: 1px solid rgba(127, 110, 160, .15); }
+    table.stack-sm td[colspan] table tr:last-child { border-bottom: 0; }
+    table.stack-sm td[colspan] table td { display: block; padding: 0 !important; text-align: start; }
+    table.stack-sm td[colspan] table td:last-child { width: 100%; white-space: normal; }
+    html.theme-light table.stack-sm > tbody > tr > td::before { color: #6b6480; }
+}

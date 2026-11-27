@@ -34,21 +34,21 @@ if ($currentUser) {
     }
 }
 ?>
-<header class="h-14 border-b border-[#261936] bg-[#140c1d] px-4 md:px-6 flex items-center justify-between shrink-0">
+<header class="relative h-14 border-b border-[#261936] bg-[#140c1d] px-2 sm:px-4 md:px-6 flex items-center justify-between gap-2 shrink-0">
     <!-- Breadcrumb Area -->
-    <div class="flex items-center gap-2 text-xs md:text-sm text-gray-400">
-        <button id="mobile-sidebar-toggle" class="md:hidden me-2 p-1 text-gray-400 hover:text-white focus:outline-none">
+    <div class="flex items-center gap-2 min-w-0 text-sm text-gray-400">
+        <button type="button" id="mobile-sidebar-toggle" class="lg:hidden w-10 h-10 shrink-0 flex items-center justify-center rounded-lg text-gray-300 hover:text-white hover:bg-[#221530] focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500" aria-label="<?= t('Open menu') ?>" title="<?= t('Open menu') ?>" aria-controls="app-sidebar" aria-expanded="false">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
         </button>
         <?php if (!empty($breadcrumbs) && is_array($breadcrumbs)): ?>
             <?php foreach ($breadcrumbs as $index => $crumb): ?>
                 <?php if ($index > 0): ?>
-                    <span class="text-gray-600 font-semibold rtl-flip">&rsaquo;</span>
+                    <span class="hidden sm:inline text-gray-600 font-semibold rtl-flip">&rsaquo;</span>
                 <?php endif; ?>
                 <?php if (!empty($crumb['url']) && $index < count($breadcrumbs) - 1): ?>
-                    <a href="<?= htmlspecialchars($crumb['url']) ?>" class="hover:text-purple-400 transition font-medium whitespace-nowrap"><?= htmlspecialchars($crumb['label']) ?></a>
+                    <a href="<?= htmlspecialchars($crumb['url']) ?>" class="hidden sm:inline hover:text-purple-400 transition font-medium whitespace-nowrap"><?= htmlspecialchars($crumb['label']) ?></a>
                 <?php else: ?>
-                    <span class="text-gray-200 font-medium whitespace-nowrap"><?= htmlspecialchars($crumb['label']) ?></span>
+                    <span class="text-gray-200 font-medium whitespace-nowrap truncate"><?= htmlspecialchars($crumb['label']) ?></span>
                 <?php endif; ?>
             <?php endforeach; ?>
         <?php else: ?>
@@ -57,9 +57,13 @@ if ($currentUser) {
     </div>
 
     <!-- Right Controls: Search & User Profile -->
-    <div class="flex items-center gap-3 md:gap-4">
+    <div class="flex items-center gap-1 sm:gap-3 md:gap-4 shrink-0">
         <!-- Search: pages for everyone, plus agents for managers and administrators -->
         <?php if ($currentUser): ?>
+        <!-- Phones: a search button opens the search bar under the header -->
+        <button type="button" id="mobile-search-btn" class="sm:hidden w-10 h-10 flex items-center justify-center rounded-lg text-gray-400 hover:text-white hover:bg-[#221530] transition focus:outline-none" aria-label="<?= $searchPeople ? t('Search agents or pages...') : t('Search pages...') ?>" title="<?= t('Search') ?>" aria-controls="gs-root" aria-expanded="false">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        </button>
         <div class="relative hidden sm:block" id="gs-root">
             <input type="text" id="gs-input" autocomplete="off" spellcheck="false"
                    role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="gs-panel"
@@ -212,12 +216,29 @@ if ($currentUser) {
                 document.addEventListener("click", e => {
                     if (!document.getElementById("gs-root").contains(e.target)) close();
                 });
+                // Phones: the search button shows the search bar across the top of the page
+                const root = document.getElementById("gs-root");
+                const mbtn = document.getElementById("mobile-search-btn");
+                const setMobile = open => {
+                    root.classList.toggle("gs-mobile-open", open);
+                    mbtn.setAttribute("aria-expanded", open ? "true" : "false");
+                    if (open) { input.focus(); if (input.value.trim()) render(); } else close();
+                };
+                mbtn.addEventListener("click", e => { e.stopPropagation(); setMobile(!root.classList.contains("gs-mobile-open")); });
+                input.addEventListener("keydown", e => { if (e.key === "Escape" && !input.value && root.classList.contains("gs-mobile-open")) setMobile(false); });
+                document.addEventListener("click", e => {
+                    if (root.classList.contains("gs-mobile-open") && !root.contains(e.target) && !mbtn.contains(e.target)) setMobile(false);
+                });
                 // "/" (or Ctrl+K) jumps to the search bar from anywhere on the page
                 document.addEventListener("keydown", e => {
                     const tag = (document.activeElement && document.activeElement.tagName) || "";
                     const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(tag) || (document.activeElement && document.activeElement.isContentEditable);
                     if ((e.key === "/" && !typing) || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k")) {
-                        if (input.offsetParent === null) return; // hidden on small screens
+                        if (input.offsetParent === null) { // phones: open the search bar first
+                            const mb = document.getElementById("mobile-search-btn");
+                            if (!mb || mb.offsetParent === null) return;
+                            mb.click();
+                        }
                         e.preventDefault();
                         input.focus();
                         input.select();
@@ -229,7 +250,7 @@ if ($currentUser) {
         <?php endif; ?>
 
         <!-- Light / dark mode switch -->
-        <button type="button" data-theme-toggle class="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-[#221530] transition focus:outline-none" title="<?= t('Switch to light mode') ?>" aria-label="<?= t('Switch to light mode') ?>" data-label-light="<?= t('Switch to light mode') ?>" data-label-dark="<?= t('Switch to dark mode') ?>">
+        <button type="button" data-theme-toggle class="w-10 h-10 sm:w-auto sm:h-auto sm:p-1.5 flex items-center justify-center rounded-lg text-gray-400 hover:text-white hover:bg-[#221530] transition focus:outline-none" title="<?= t('Switch to light mode') ?>" aria-label="<?= t('Switch to light mode') ?>" data-label-light="<?= t('Switch to light mode') ?>" data-label-dark="<?= t('Switch to dark mode') ?>">
             <svg data-theme-icon="sun" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
             <svg data-theme-icon="moon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
         </button>
@@ -240,16 +261,16 @@ if ($currentUser) {
         <?php if ($currentUser && in_array($currentUser['role'], ['administrator', 'manager'], true)): ?>
             <!-- Notifications: time error reports sent by agents -->
             <div class="relative" id="notif-root">
-                <button type="button" id="notif-btn" class="relative p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-[#221530] transition focus:outline-none" title="<?= t('Reports from agents') ?>">
+                <button type="button" id="notif-btn" class="relative w-10 h-10 sm:w-auto sm:h-auto sm:p-1.5 flex items-center justify-center rounded-lg text-gray-400 hover:text-white hover:bg-[#221530] transition focus:outline-none" title="<?= t('Reports from agents') ?>">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
-                    <span id="notif-badge" class="hidden absolute -top-0.5 -end-0.5 min-w-[16px] h-4 px-1 rounded-full bg-red-600 text-white text-[10px] font-bold leading-4 text-center"></span>
+                    <span id="notif-badge" class="hidden absolute top-1 end-1 sm:-top-0.5 sm:-end-0.5 min-w-[16px] h-4 px-1 rounded-full bg-red-600 text-white text-[10px] font-bold leading-4 text-center"></span>
                 </button>
-                <div id="notif-panel" class="hidden absolute end-0 mt-2 w-80 max-w-[calc(100vw-2rem)] bg-[#1a1228] border border-[#2d1e44] rounded-lg shadow-xl text-xs z-50">
+                <div id="notif-panel" class="hidden fixed sm:absolute inset-x-2 top-14 sm:inset-x-auto sm:top-auto sm:end-0 mt-1 sm:mt-2 sm:w-80 sm:max-w-[calc(100vw-2rem)] bg-[#1a1228] border border-[#2d1e44] rounded-lg shadow-xl text-xs z-50">
                     <div class="px-4 py-2.5 border-b border-[#2d1e44] flex items-center justify-between">
                         <span class="font-semibold text-white"><?= t('Reports from agents') ?></span>
                         <span id="notif-count" class="text-gray-400"></span>
                     </div>
-                    <div id="notif-list" class="max-h-96 overflow-y-auto divide-y divide-[#2d1e44]">
+                    <div id="notif-list" class="max-h-[60vh] sm:max-h-96 overflow-y-auto divide-y divide-[#2d1e44]">
                         <div class="px-4 py-6 text-center text-gray-500"><?= t('Loading...') ?></div>
                     </div>
                     <a href="/virtual-time-clock/public/admin/time-errors.php" class="block px-4 py-2.5 border-t border-[#2d1e44] text-center text-purple-300 hover:bg-[#26173a] rounded-b-lg"><?= t('See all reports') ?></a>
@@ -335,7 +356,7 @@ if ($currentUser) {
         <!-- User profile widget -->
         <?php if ($currentUser): ?>
             <div class="relative">
-                <button type="button" id="user-menu-btn" class="flex items-center gap-2.5 hover:opacity-90 focus:outline-none py-1">
+                <button type="button" id="user-menu-btn" class="flex items-center gap-2.5 hover:opacity-90 focus:outline-none p-1 sm:px-0" aria-label="<?= t('Account menu') ?>" aria-haspopup="true">
                     <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-600 to-indigo-500 text-white flex items-center justify-center font-bold text-xs uppercase shadow-inner">
                         <?= strtoupper(substr($currentUser['first_name'] ?? $currentUser['username'], 0, 1) . substr($currentUser['last_name'] ?? '', 0, 1)) ?>
                     </div>
@@ -351,16 +372,16 @@ if ($currentUser) {
                 </button>
 
                 <!-- Dropdown Menu -->
-                <div id="user-menu-dropdown" class="hidden absolute end-0 mt-2 w-48 bg-[#1a1228] border border-[#2d1e44] rounded-lg shadow-xl py-1 text-xs z-50">
+                <div id="user-menu-dropdown" class="hidden absolute end-0 mt-2 w-56 sm:w-48 bg-[#1a1228] border border-[#2d1e44] rounded-lg shadow-xl py-1 text-xs z-50">
                     <div class="px-4 py-2 border-b border-[#2d1e44] md:hidden">
                         <p class="font-medium text-white"><?= htmlspecialchars($currentUser['first_name'] . ' ' . $currentUser['last_name']) ?></p>
                         <p class="text-[11px] text-gray-400"><?= htmlspecialchars($currentUser['email']) ?></p>
                     </div>
-                    <a href="/virtual-time-clock/public/history.php" class="block px-4 py-2 text-gray-300 hover:bg-[#26173a] hover:text-white transition"><?= t('My History') ?></a>
+                    <a href="/virtual-time-clock/public/history.php" class="block px-4 py-3 sm:py-2 text-sm sm:text-xs text-gray-300 hover:bg-[#26173a] hover:text-white transition"><?= t('My History') ?></a>
                     <?php if (in_array($currentUser['role'], ['administrator', 'manager'])): ?>
-                        <a href="/virtual-time-clock/public/admin/index.php" class="block px-4 py-2 text-gray-300 hover:bg-[#26173a] hover:text-white transition"><?= t('Admin Panel') ?></a>
+                        <a href="/virtual-time-clock/public/admin/index.php" class="block px-4 py-3 sm:py-2 text-sm sm:text-xs text-gray-300 hover:bg-[#26173a] hover:text-white transition"><?= t('Admin Panel') ?></a>
                     <?php endif; ?>
-                    <button type="button" class="w-full text-start px-4 py-2 text-red-400 hover:bg-[#26173a] hover:text-red-300 transition border-t border-[#2d1e44] btn-trigger-logout"><?= t('Sign Out') ?></button>
+                    <button type="button" class="w-full text-start px-4 py-3 sm:py-2 text-sm sm:text-xs text-red-400 hover:bg-[#26173a] hover:text-red-300 transition border-t border-[#2d1e44] btn-trigger-logout"><?= t('Sign Out') ?></button>
                 </div>
             </div>
 

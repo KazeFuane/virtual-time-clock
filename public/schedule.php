@@ -75,7 +75,7 @@ ob_start();
             <span id="my-total" class="text-[11px] text-gray-400"></span>
         </div>
         <div class="overflow-x-auto">
-            <table class="w-full text-xs">
+            <table class="w-full text-xs stack-sm">
                 <thead class="text-[11px] uppercase tracking-wider text-gray-500 border-b border-[#251738]">
                     <tr><th class="text-start px-5 py-2"><?= t('Date') ?></th><th class="text-start px-3 py-2"><?= t('Shifts') ?></th><th class="text-end px-3 py-2"><?= t('Time') ?></th><th class="text-start px-5 py-2"><?= t('Schedule / note') ?></th></tr>
                 </thead>
@@ -199,8 +199,8 @@ $pageScripts = <<<'HTML'
 
     // ---------------- Agent view ----------------
     async function loadMine() {
-        const [f, t] = range();
-        const res = await apiRequest(`${MY_API}?from=${ymd(f)}&to=${ymd(t)}`);
+        const [f, until] = range();
+        const res = await apiRequest(`${MY_API}?from=${ymd(f)}&to=${ymd(until)}`);
         if (!res.success) { showToast(res.message, "error"); return; }
         const d = res.data;
         $("my-total").textContent = t("Planned: {time}", { time: dur(d.planned_seconds) });

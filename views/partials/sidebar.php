@@ -25,12 +25,12 @@ $timeMgmtActive = $navActive('/virtual-time-clock/public/dashboard.php')
     || $navActive('/virtual-time-clock/public/schedule.php');
 $isPlanner = !empty($currentUser) && in_array($currentUser['role'], ['administrator', 'manager'], true);
 ?>
-<aside id="app-sidebar" class="w-64 bg-[#140c1d] border-e border-[#261936] flex flex-col justify-between shrink-0 transition-transform duration-300 z-40">
+<aside id="app-sidebar" aria-label="<?= t('Menu') ?>" class="w-64 bg-[#140c1d] border-e border-[#261936] flex flex-col justify-between shrink-0 transition-transform duration-300 z-40">
     <!-- Top Branding & Navigation -->
     <div class="flex flex-col h-full overflow-y-auto">
         <!-- Brand / Org Info matching screenshot -->
-        <div class="px-5 py-4 border-b border-[#261936]">
-            <a href="/virtual-time-clock/public/dashboard.php" class="flex items-center gap-2.5 rounded-lg hover:opacity-90 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500" title="<?= t('Virtual Time Clock') ?>">
+        <div class="px-5 py-4 border-b border-[#261936] flex items-center justify-between gap-2">
+            <a href="/virtual-time-clock/public/dashboard.php" class="flex items-center gap-2.5 min-w-0 rounded-lg hover:opacity-90 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500" title="<?= t('Virtual Time Clock') ?>">
                 <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center shrink-0">
                     <svg class="w-[18px] h-[18px] text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 </div>
@@ -39,6 +39,10 @@ $isPlanner = !empty($currentUser) && in_array($currentUser['role'], ['administra
                     <div class="text-xs text-purple-400 font-medium"><?= t('Time &amp; attendance') ?></div>
                 </div>
             </a>
+            <!-- Close the menu (phones and tablets only) -->
+            <button type="button" id="mobile-sidebar-close" class="lg:hidden -me-2 w-10 h-10 shrink-0 flex items-center justify-center rounded-lg text-gray-400 hover:text-white hover:bg-[#221530] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500" aria-label="<?= t('Close menu') ?>" title="<?= t('Close menu') ?>">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
         </div>
 
         <!-- Navigation Links -->
@@ -53,16 +57,16 @@ $isPlanner = !empty($currentUser) && in_array($currentUser['role'], ['administra
                     <svg id="time-mgmt-icon" class="w-3.5 h-3.5 text-gray-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                 </button>
                 <div id="time-mgmt-group" class="ps-7 pe-2 py-1 space-y-1">
-                    <a href="/virtual-time-clock/public/dashboard.php" class="block px-3 py-1.5 rounded-md text-xs <?= $navActive('/virtual-time-clock/public/dashboard.php') ? $activeSubClass : 'text-gray-400 hover:text-gray-200 hover:bg-[#1c1228]' ?> transition">
+                    <a href="/virtual-time-clock/public/dashboard.php" class="block px-3 py-2.5 lg:py-1.5 rounded-md text-sm lg:text-xs <?= $navActive('/virtual-time-clock/public/dashboard.php') ? $activeSubClass : 'text-gray-400 hover:text-gray-200 hover:bg-[#1c1228]' ?> transition">
                         <?= t('Virtual Time Clock') ?>
                     </a>
-                    <a href="/virtual-time-clock/public/history.php" class="block px-3 py-1.5 rounded-md text-xs <?= $navActive('/virtual-time-clock/public/history.php') ? $activeSubClass : 'text-gray-400 hover:text-gray-200 hover:bg-[#1c1228]' ?> transition">
+                    <a href="/virtual-time-clock/public/history.php" class="block px-3 py-2.5 lg:py-1.5 rounded-md text-sm lg:text-xs <?= $navActive('/virtual-time-clock/public/history.php') ? $activeSubClass : 'text-gray-400 hover:text-gray-200 hover:bg-[#1c1228]' ?> transition">
                         <?= t('My History') ?>
                     </a>
-                    <a href="/virtual-time-clock/public/time-errors.php" class="block px-3 py-1.5 rounded-md text-xs <?= $navActive('/virtual-time-clock/public/time-errors.php') ? $activeSubClass : 'text-gray-400 hover:text-gray-200 hover:bg-[#1c1228]' ?> transition">
+                    <a href="/virtual-time-clock/public/time-errors.php" class="block px-3 py-2.5 lg:py-1.5 rounded-md text-sm lg:text-xs <?= $navActive('/virtual-time-clock/public/time-errors.php') ? $activeSubClass : 'text-gray-400 hover:text-gray-200 hover:bg-[#1c1228]' ?> transition">
                         <?= t('Summary of time errors') ?>
                     </a>
-                    <a href="/virtual-time-clock/public/schedule.php" class="block px-3 py-1.5 rounded-md text-xs <?= $navActive('/virtual-time-clock/public/schedule.php') ? $activeSubClass : 'text-gray-400 hover:text-gray-200 hover:bg-[#1c1228]' ?> transition">
+                    <a href="/virtual-time-clock/public/schedule.php" class="block px-3 py-2.5 lg:py-1.5 rounded-md text-sm lg:text-xs <?= $navActive('/virtual-time-clock/public/schedule.php') ? $activeSubClass : 'text-gray-400 hover:text-gray-200 hover:bg-[#1c1228]' ?> transition">
                         <?= $isPlanner ? t('Schedules') : t('My Schedule') ?>
                     </a>
                 </div>
@@ -98,20 +102,20 @@ $isPlanner = !empty($currentUser) && in_array($currentUser['role'], ['administra
                 <!-- Admin Panel Link -->
                 <div class="pt-4 mt-2 border-t border-[#261936]">
                     <span class="px-3 text-[10px] uppercase font-bold tracking-wider text-purple-400"><?= t('Management') ?></span>
-                    <a href="/virtual-time-clock/public/admin/index.php" class="flex items-center justify-between px-3 py-2 rounded-lg <?= $navActive('/virtual-time-clock/public/admin/index.php') ? $activeClass : 'text-gray-300 hover:bg-[#221530] hover:text-white' ?> transition mt-1">
+                    <a href="/virtual-time-clock/public/admin/index.php" class="flex items-center justify-between px-3 py-2.5 lg:py-2 rounded-lg <?= $navActive('/virtual-time-clock/public/admin/index.php') ? $activeClass : 'text-gray-300 hover:bg-[#221530] hover:text-white' ?> transition mt-1">
                         <span><?= t('Admin Console') ?></span>
                         <span class="text-[10px] bg-purple-900 text-purple-300 font-semibold px-1.5 py-0.5 rounded"><?= t('Admin') ?></span>
                     </a>
-                    <a href="/virtual-time-clock/public/admin/time-errors.php" class="flex items-center justify-between px-3 py-2 rounded-lg <?= $navActive('/virtual-time-clock/public/admin/time-errors.php') ? $activeClass : 'text-gray-300 hover:bg-[#221530] hover:text-white' ?> transition mt-1">
+                    <a href="/virtual-time-clock/public/admin/time-errors.php" class="flex items-center justify-between px-3 py-2.5 lg:py-2 rounded-lg <?= $navActive('/virtual-time-clock/public/admin/time-errors.php') ? $activeClass : 'text-gray-300 hover:bg-[#221530] hover:text-white' ?> transition mt-1">
                         <span><?= t('Time Errors') ?></span>
                     </a>
-                    <a href="/virtual-time-clock/public/admin/time-corrections.php" class="flex items-center justify-between px-3 py-2 rounded-lg <?= $navActive('/virtual-time-clock/public/admin/time-corrections.php') ? $activeClass : 'text-gray-300 hover:bg-[#221530] hover:text-white' ?> transition mt-1">
+                    <a href="/virtual-time-clock/public/admin/time-corrections.php" class="flex items-center justify-between px-3 py-2.5 lg:py-2 rounded-lg <?= $navActive('/virtual-time-clock/public/admin/time-corrections.php') ? $activeClass : 'text-gray-300 hover:bg-[#221530] hover:text-white' ?> transition mt-1">
                         <span><?= t('Correct Times') ?></span>
                     </a>
-                    <a href="/virtual-time-clock/public/admin/leaves.php" class="flex items-center justify-between px-3 py-2 rounded-lg <?= $navActive('/virtual-time-clock/public/admin/leaves.php') ? $activeClass : 'text-gray-300 hover:bg-[#221530] hover:text-white' ?> transition mt-1">
+                    <a href="/virtual-time-clock/public/admin/leaves.php" class="flex items-center justify-between px-3 py-2.5 lg:py-2 rounded-lg <?= $navActive('/virtual-time-clock/public/admin/leaves.php') ? $activeClass : 'text-gray-300 hover:bg-[#221530] hover:text-white' ?> transition mt-1">
                         <span><?= t('Leave &amp; PTO') ?></span>
                     </a>
-                    <a href="/virtual-time-clock/public/schedule.php" class="flex items-center justify-between px-3 py-2 rounded-lg <?= $navActive('/virtual-time-clock/public/schedule.php') ? $activeClass : 'text-gray-300 hover:bg-[#221530] hover:text-white' ?> transition mt-1">
+                    <a href="/virtual-time-clock/public/schedule.php" class="flex items-center justify-between px-3 py-2.5 lg:py-2 rounded-lg <?= $navActive('/virtual-time-clock/public/schedule.php') ? $activeClass : 'text-gray-300 hover:bg-[#221530] hover:text-white' ?> transition mt-1">
                         <span><?= t('Plan Schedules') ?></span>
                     </a>
                 </div>
@@ -120,13 +124,13 @@ $isPlanner = !empty($currentUser) && in_array($currentUser['role'], ['administra
 
         <!-- Sidebar Bottom Items -->
         <div class="p-3 border-t border-[#261936] text-xs space-y-2 text-gray-400">
-            <div class="flex items-center gap-4 px-2">
-                <a href="<?= htmlspecialchars(ComingSoon::url('Help')) ?>" class="flex items-center gap-1.5 hover:text-white transition" title="<?= t('Coming soon') ?>">
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 px-2">
+                <a href="<?= htmlspecialchars(ComingSoon::url('Help')) ?>" class="flex items-center gap-1.5 py-2 lg:py-0 hover:text-white transition" title="<?= t('Coming soon') ?>">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                     <?= t('Help') ?>
                     <span class="w-1.5 h-1.5 rounded-full bg-amber-400" aria-hidden="true"></span>
                 </a>
-                <a href="<?= htmlspecialchars(ComingSoon::url('Privacy & Compliance')) ?>" class="flex items-center gap-1.5 hover:text-white transition" title="<?= t('Coming soon') ?>">
+                <a href="<?= htmlspecialchars(ComingSoon::url('Privacy & Compliance')) ?>" class="flex items-center gap-1.5 py-2 lg:py-0 hover:text-white transition" title="<?= t('Coming soon') ?>">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
                     <?= t('Privacy & Compliance') ?>
                     <span class="w-1.5 h-1.5 rounded-full bg-amber-400" aria-hidden="true"></span>

@@ -191,16 +191,62 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Mobile sidebar toggle
+    // Phones and tablets: the sidebar is a slide-in menu (see assets/css/mobile.css)
     const mobileToggle = document.getElementById('mobile-sidebar-toggle');
     const sidebar = document.getElementById('app-sidebar');
     if (mobileToggle && sidebar) {
-        mobileToggle.addEventListener('click', () => {
-            sidebar.classList.toggle('-translate-x-full');
-            sidebar.classList.toggle('rtl:translate-x-full');
+        const root = document.documentElement;
+        const setMenu = (open) => {
+            root.classList.toggle('sidebar-open', open);
+            mobileToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+            if (open) {
+                (document.getElementById('mobile-sidebar-close') || sidebar).focus();
+            } else if (sidebar.contains(document.activeElement)) {
+                mobileToggle.focus();
+            }
+        };
+        mobileToggle.addEventListener('click', () => setMenu(!root.classList.contains('sidebar-open')));
+        document.getElementById('mobile-sidebar-close')?.addEventListener('click', () => setMenu(false));
+        document.getElementById('sidebar-backdrop')?.addEventListener('click', () => setMenu(false));
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && root.classList.contains('sidebar-open')) setMenu(false);
         });
+        // Close after picking a page, and if the screen grows to desktop size
+        sidebar.addEventListener('click', (e) => { if (e.target.closest('a[href]')) setMenu(false); });
+        window.matchMedia('(min-width: 1024px)').addEventListener('change', (e) => { if (e.matches) setMenu(false); });
+
+        // Swipe the open menu back towards its edge to close it
+        let x0 = null, y0 = null;
+        sidebar.addEventListener('touchstart', (e) => { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; }, { passive: true });
+        sidebar.addEventListener('touchend', (e) => {
+            if (x0 === null) return;
+            const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0;
+            const rtl = document.documentElement.dir === 'rtl';
+            if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5 && (rtl ? dx > 0 : dx < 0)) setMenu(false);
+            x0 = y0 = null;
+        }, { passive: true });
     }
 });
+
+// Tables with class "stack-sm" become cards on phones (see mobile.css).
+// Each cell gets its column name in data-label, also for rows added later.
+function labelStackTables(root = document) {
+    root.querySelectorAll('table.stack-sm').forEach((table) => {
+        const heads = [...table.querySelectorAll(':scope > thead th')].map((th) => th.textContent.trim().replace(/\s+/g, ' '));
+        table.querySelectorAll(':scope > tbody > tr').forEach((tr) => {
+            let col = 0;
+            [...tr.children].forEach((td) => {
+                if (!td.hasAttribute('data-label') && !td.hasAttribute('colspan')) td.setAttribute('data-label', heads[col] || '');
+                col += parseInt(td.getAttribute('colspan') || '1', 10);
+            });
+        });
+        if (!table.__stackObserved) {
+            table.__stackObserved = true;
+            table.querySelectorAll(':scope > tbody').forEach((tb) => new MutationObserver(() => labelStackTables(table.parentNode)).observe(tb, { childList: true }));
+        }
+    });
+}
+document.addEventListener('DOMContentLoaded', () => labelStackTables());
 
 // "Coming soon" pop-up for a button whose feature is not built yet.
 // Put data-coming-soon on the button (optionally with the feature's English

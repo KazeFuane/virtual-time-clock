@@ -50,10 +50,10 @@ ob_start();
     <div class="bg-[#140c1d] border border-[#251738] rounded-xl overflow-hidden shadow-xl">
         <div class="px-4 py-3 bg-[#1a1226] border-b border-[#251738] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <h3 class="text-xs font-semibold text-white uppercase tracking-wider"><?= t('Summary per agent') ?></h3>
-            <input type="text" id="te-search" placeholder="<?= t('Search name or username...') ?>" class="bg-[#120a1c] border border-[#2d1e44] text-xs text-gray-200 rounded-lg px-3 py-1.5 w-64">
+            <input type="text" id="te-search" placeholder="<?= t('Search name or username...') ?>" class="bg-[#120a1c] border border-[#2d1e44] text-xs text-gray-200 rounded-lg px-3 py-1.5 w-full sm:w-64">
         </div>
         <div class="overflow-x-auto">
-            <table class="w-full text-start text-xs">
+            <table class="w-full text-start text-xs stack-sm">
                 <thead class="bg-[#160e22] text-gray-400 font-semibold border-b border-[#251738]">
                     <tr>
                         <th class="py-2.5 px-4"><?= t('Agent') ?></th>
@@ -139,7 +139,7 @@ $pageScripts = <<<'HTML'
                     <td class="py-2.5 px-4 font-mono text-gray-300">${a.unverifiable_days}</td>
                     <td class="py-2.5 px-4 font-mono ${diffClass}">${fmt(a.difference_seconds)}</td>
                     <td class="py-2.5 px-4 font-mono ${leaveN ? "text-emerald-300" : "text-gray-500"}">${leaveN ? `${t("{n} d", { n: leaveN })} · ${fmt(leaveSec).replace("+", "")}` : "-"}</td>
-                    <td class="py-2.5 px-4">${top}</td>
+                    <td class="py-2.5 px-4" data-label="">${top}</td>
                 </tr>
                 <tr class="hidden bg-[#110a19]" data-detail="${i}"><td colspan="8" class="px-6 py-3"><table class="w-full text-[11px]">${rows}</table></td></tr>`;
         }).join("");

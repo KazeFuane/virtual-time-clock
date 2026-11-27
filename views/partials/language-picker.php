@@ -6,7 +6,7 @@
  */
 $langCurrent = Lang::current();
 $langList    = Lang::available();
-$langBtnClass = $langPickerClass ?? 'flex items-center gap-1 p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-[#221530] transition focus:outline-none';
+$langBtnClass = $langPickerClass ?? 'flex items-center justify-center gap-1 h-10 px-2 sm:h-auto sm:p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-[#221530] transition focus:outline-none';
 ?>
 <div class="relative" data-lang-root>
     <button type="button" data-lang-btn class="<?= $langBtnClass ?>" title="<?= t('Language') ?>" aria-label="<?= t('Language') ?>" aria-haspopup="true" aria-expanded="false">
@@ -18,7 +18,7 @@ $langBtnClass = $langPickerClass ?? 'flex items-center gap-1 p-1.5 rounded-lg te
         <?php foreach ($langList as $code => $info): ?>
             <button type="button" role="menuitem" data-set-lang="<?= htmlspecialchars($code) ?>" lang="<?= htmlspecialchars($code) ?>" dir="<?= $info['dir'] ?>"
                     <?= $code === $langCurrent ? 'aria-current="true"' : '' ?>
-                    class="w-full flex items-center justify-between px-4 py-2 text-start <?= $code === $langCurrent ? 'text-white font-semibold' : 'text-gray-300' ?> hover:bg-[#26173a] hover:text-white transition">
+                    class="w-full flex items-center justify-between px-4 py-3 sm:py-2 text-sm sm:text-xs text-start <?= $code === $langCurrent ? 'text-white font-semibold' : 'text-gray-300' ?> hover:bg-[#26173a] hover:text-white transition">
                 <span><?= htmlspecialchars($info['name']) ?></span>
                 <?php if ($code === $langCurrent): ?><span class="text-purple-400">&check;</span><?php endif; ?>
             </button>

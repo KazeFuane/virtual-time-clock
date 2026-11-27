@@ -737,5 +737,12 @@ return [
         'A live view of who is working, on break or offline, and how the day is going.' => 'عرض مباشر لمن يعمل أو في استراحة أو غير متصل، وكيف يسير اليوم.',
         'Step-by-step guides and answers to common questions about the time clock.' => 'أدلة خطوة بخطوة وإجابات عن الأسئلة الشائعة حول ساعة الدوام.',
         'How ClockWise stores and protects your time records, and your rights over them.' => 'كيف يحفظ ClockWise سجلات وقتك ويحميها، وحقوقك عليها.',
+
+        // Phone layout (menu and search buttons)
+        'Menu' => 'القائمة',
+        'Open menu' => 'فتح القائمة',
+        'Close menu' => 'إغلاق القائمة',
+        'Account menu' => 'قائمة الحساب',
+        'Search' => 'بحث',
     ],
 ];

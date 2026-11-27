@@ -23,14 +23,14 @@ ob_start();
             <p class="text-xs text-gray-400 mt-1"><?= t('Monitor organization staff status, register new employees, and export records.') ?></p>
         </div>
 
-        <div class="flex items-center gap-2">
-            <input type="date" id="admin-date-picker" class="bg-[#1a1226] border border-[#2d1e44] text-xs font-mono text-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:border-purple-500 transition">
-            <button id="btn-export-csv" class="px-3 py-1.5 rounded-lg bg-emerald-700/50 hover:bg-emerald-600/60 border border-emerald-600 text-emerald-200 text-xs font-semibold flex items-center gap-1.5 transition">
+        <div class="flex flex-wrap items-center gap-2">
+            <input type="date" id="admin-date-picker" class="w-full sm:w-auto bg-[#1a1226] border border-[#2d1e44] text-xs font-mono text-gray-200 rounded-lg px-3 py-2 sm:py-1.5 focus:outline-none focus:border-purple-500 transition">
+            <button id="btn-export-csv" class="flex-1 sm:flex-none justify-center px-3 py-2.5 sm:py-1.5 rounded-lg bg-emerald-700/50 hover:bg-emerald-600/60 border border-emerald-600 text-emerald-200 text-xs font-semibold flex items-center gap-1.5 transition">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                 <?= t('Export CSV') ?>
             </button>
             <?php if ($currentUser['role'] === 'administrator'): ?>
-                <button onclick="document.getElementById('modal-add-employee').classList.remove('hidden')" class="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold flex items-center gap-1.5 transition">
+                <button onclick="document.getElementById('modal-add-employee').classList.remove('hidden')" class="flex-1 sm:flex-none justify-center px-3 py-2.5 sm:py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold flex items-center gap-1.5 transition">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                     <?= t('New Employee') ?>
                 </button>
@@ -42,10 +42,10 @@ ob_start();
     <div class="bg-[#140c1d] border border-[#251738] rounded-xl overflow-hidden shadow-xl">
         <div class="px-4 py-3 bg-[#1a1226] border-b border-[#251738] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <h3 class="text-xs font-semibold text-white uppercase tracking-wider"><?= t('Attendance Register') ?></h3>
-            <input type="text" id="admin-search-input" placeholder="<?= t('Search staff name or username...') ?>" class="bg-[#120a1c] border border-[#2d1e44] text-xs text-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:border-purple-500 w-64">
+            <input type="text" id="admin-search-input" placeholder="<?= t('Search staff name or username...') ?>" class="bg-[#120a1c] border border-[#2d1e44] text-xs text-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:border-purple-500 w-full sm:w-64">
         </div>
         <div class="overflow-x-auto">
-            <table class="w-full text-start text-xs">
+            <table class="w-full text-start text-xs stack-sm">
                 <thead class="bg-[#160e22] text-gray-400 font-semibold border-b border-[#251738]">
                     <tr>
                         <th class="py-2.5 px-4"><?= t('Employee') ?></th>
@@ -74,10 +74,10 @@ ob_start();
                 <h3 class="text-xs font-semibold text-white uppercase tracking-wider"><?= t('User Accounts') ?></h3>
                 <p class="text-[11px] text-gray-500 mt-0.5"><?= t('Passwords are stored encrypted (hashed) and cannot be viewed. Use Reset to set a new one.') ?></p>
             </div>
-            <input type="text" id="users-search-input" placeholder="<?= t('Filter accounts...') ?>" class="bg-[#120a1c] border border-[#2d1e44] text-xs text-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:border-purple-500 w-64">
+            <input type="text" id="users-search-input" placeholder="<?= t('Filter accounts...') ?>" class="bg-[#120a1c] border border-[#2d1e44] text-xs text-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:border-purple-500 w-full sm:w-64">
         </div>
         <div class="overflow-x-auto">
-            <table class="w-full text-start text-xs">
+            <table class="w-full text-start text-xs stack-sm">
                 <thead class="bg-[#160e22] text-gray-400 font-semibold border-b border-[#251738]">
                     <tr>
                         <th class="py-2.5 px-4"><?= t('Name') ?></th>
@@ -496,10 +496,10 @@ function renderUsers() {
                 <td class="py-2.5 px-4 text-gray-400 capitalize">${escapeHtml(t(u.role))}</td>
                 <td class="py-2.5 px-4">${status}</td>
                 <td class="py-2.5 px-4 font-mono text-gray-500" title="${t("Stored as a secure hash - cannot be displayed")}">&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;</td>
-                <td class="py-2.5 px-4 text-end whitespace-nowrap">
-                    <button data-action="edit" data-id="${u.id}" class="px-2.5 py-1 rounded-md bg-purple-900/40 hover:bg-purple-800/60 border border-purple-800 text-purple-200 text-[11px] font-semibold">${t("Edit")}</button>
-                    <button data-action="reset" data-id="${u.id}" class="ms-1 px-2.5 py-1 rounded-md bg-amber-900/40 hover:bg-amber-800/60 border border-amber-800 text-amber-200 text-[11px] font-semibold">${t("Reset password")}</button>
-                    <button data-action="toggle" data-id="${u.id}" class="ms-1 px-2.5 py-1 rounded-md bg-[#221532] hover:bg-[#2c1c3f] text-gray-300 text-[11px]">${active ? t("Deactivate") : t("Activate")}</button>
+                <td class="py-2.5 px-4 text-end sm:whitespace-nowrap" data-label="">
+                    <button data-action="edit" data-id="${u.id}" class="px-2.5 py-2 sm:py-1 rounded-md bg-purple-900/40 hover:bg-purple-800/60 border border-purple-800 text-purple-200 text-[11px] font-semibold">${t("Edit")}</button>
+                    <button data-action="reset" data-id="${u.id}" class="ms-1 px-2.5 py-2 sm:py-1 rounded-md bg-amber-900/40 hover:bg-amber-800/60 border border-amber-800 text-amber-200 text-[11px] font-semibold">${t("Reset password")}</button>
+                    <button data-action="toggle" data-id="${u.id}" class="ms-1 px-2.5 py-2 sm:py-1 rounded-md bg-[#221532] hover:bg-[#2c1c3f] text-gray-300 text-[11px]">${active ? t("Deactivate") : t("Activate")}</button>
                 </td>
             </tr>`;
     }).join("");
